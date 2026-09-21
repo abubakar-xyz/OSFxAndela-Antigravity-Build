@@ -47,9 +47,9 @@ export const TextInput: React.FC<TextInputProps> = ({
           width: '46px',
           height: '46px',
           borderRadius: 'var(--radius-full)',
-          background: '#ffffff',
-          border: '1px solid var(--warm-paper-80)',
-          color: 'var(--luminous-teal-dim)',
+          background: 'var(--midnight-ink-80)',
+          border: '1px solid var(--midnight-ink-70)',
+          color: 'var(--luminous-teal)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -58,7 +58,7 @@ export const TextInput: React.FC<TextInputProps> = ({
           flexShrink: 0,
           transition: 'all var(--duration-fast)',
           WebkitTapHighlightColor: 'transparent',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
         }}
       >
         <Camera size={22} />
@@ -69,12 +69,12 @@ export const TextInput: React.FC<TextInputProps> = ({
           flex: 1,
           display: 'flex',
           alignItems: 'center',
-          background: '#ffffff',
-          border: '1px solid var(--warm-paper-80)',
+          background: 'var(--midnight-ink-80)',
+          border: '1px solid var(--midnight-ink-70)',
           borderRadius: 'var(--radius-full)',
           padding: '0 4px 0 16px',
           height: '46px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
         }}
       >
         <input
@@ -88,7 +88,7 @@ export const TextInput: React.FC<TextInputProps> = ({
             background: 'transparent',
             border: 'none',
             outline: 'none',
-            color: 'var(--neutral-10)',
+            color: '#FFFFFF',
             fontSize: 'var(--text-sm)'
           }}
         />
@@ -103,7 +103,7 @@ export const TextInput: React.FC<TextInputProps> = ({
             borderRadius: '50%',
             background: text.trim() ? 'var(--luminous-teal)' : 'transparent',
             border: 'none',
-            color: text.trim() ? 'var(--midnight-ink)' : 'var(--neutral-60)',
+            color: text.trim() ? 'var(--midnight-ink)' : 'var(--text-muted)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

@@ -39,7 +39,7 @@ dotenv.config();
 const API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
 const PREFERRED_MODEL = process.env.GEMINI_LIVE_MODEL || process.env.VITE_GEMINI_LIVE_MODEL || '';
 const JURISDICTION = process.env.WAZI_JURISDICTION || 'Nigeria';
-const PORT = Number(process.env.PORT || 8080);
+const PORT = 3000;
 const VERBOSE = process.env.WAZI_LOG !== 'quiet';
 
 if (!API_KEY) {
@@ -76,19 +76,30 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-const VISION_MODEL = process.env.GEMINI_VISION_MODEL || 'gemini-2.5-flash';
+const VISION_MODELS = [process.env.GEMINI_VISION_MODEL, 'gemini-3.8-flash', 'gemini-2.5-flash'].filter(Boolean);
 
-const CLUE_PROMPT = `Analyze this civic signboard or public project site image. Extract visible structured clues.
+const CLUE_PROMPT = `Analyze this civic image (which may be a public project signboard, tender notice, facility, construction site, road, school, clinic, or photo).
+Extract visible structured clues based on what is actually shown in the image.
+
 Fields to look for:
-- project_name: Title of project or service
-- tender_ref: Contract / Tender reference code
-- agency: Government ministry, department or agency
-- contractor: Company or contractor name
-- status_claimed: Claimed state (e.g. Completed, In Progress)
-- visual_condition: Visible physical state (e.g. unroofed, weeds, no equipment)
-- location: City, LGA, State
-Return ONLY a valid JSON array of objects shaped { "id": string, "field": string, "label": string, "value": string, "confidence": number }.
-Omit any field you cannot actually read in the image. Never invent a reference number.`;
+- project_name: Title of project, facility, or public works
+- tender_ref: Contract or tender reference code if visible
+- agency: Government ministry, department, or agency (MDA)
+- contractor: Contractor or vendor company name
+- claimed_amount: Budget, contract amount, or cost if stated
+- status_claimed: Claimed state stated on signboard (e.g. Completed, Commissioned, Ongoing)
+- visual_condition: Actual visible physical condition in the photo (e.g., "unroofed building carcass", "overgrown weeds", "unpaved pot-holed road", "completed modern structure")
+- location: Observed LGA, city, state, or community mentioned
+
+CRITICAL RULES:
+1. Extract ONLY facts that are actually visible or readable in this image.
+2. If this is a real photo without text or signboard, describe what is visibly present under visual_condition and project_name.
+3. NEVER hallucinate or invent reference codes, contractors, or government agencies not supported by the image.
+4. Return ONLY a valid JSON array of objects with keys: "id", "field", "label", "value", "confidence".
+Example:
+[
+  { "id": "clue-1", "field": "project_name", "label": "Project Name", "value": "Primary Health Centre", "confidence": 0.95 }
+]`;
 
 /** Multimodal clue extraction. The browser sends pixels; the key stays here. */
 app.post('/api/vision/clues', async (req, res) => {
@@ -98,31 +109,58 @@ app.post('/api/vision/clues', async (req, res) => {
   if (typeof image !== 'string' || image.length < 32) {
     return res.status(400).json({ error: 'missing_image' });
   }
-  const data = image.replace(/^data:image\/\w+;base64,/, '');
 
-  try {
-    const result = await ai.models.generateContent({
-      model: VISION_MODEL,
-      contents: [
-        { role: 'user', parts: [{ text: CLUE_PROMPT }, { inlineData: { mimeType: 'image/jpeg', data } }] }
-      ]
-    });
-    const text = result.text || '';
-    const match = text.match(/\[[\s\S]*\]/);
-    if (!match) return res.status(502).json({ error: 'unparseable_response' });
-    return res.json({ clues: JSON.parse(match[0]) });
-  } catch (err) {
-    console.error('vision extraction failed:', err?.message);
-    return res.status(502).json({ error: 'extraction_failed', message: err?.message });
+  const mimeMatch = image.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
+  const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  const data = image.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+
+  let lastError = null;
+  for (const modelName of VISION_MODELS) {
+    try {
+      const result = await ai.models.generateContent({
+        model: modelName,
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: CLUE_PROMPT },
+              { inlineData: { mimeType, data } }
+            ]
+          }
+        ]
+      });
+
+      const text = result.text || '';
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) {
+        const clues = JSON.parse(match[0]);
+        return res.json({ clues, model: modelName, isLive: true });
+      }
+    } catch (err) {
+      console.warn(`Vision model ${modelName} failed:`, err?.message);
+      lastError = err;
+    }
   }
+
+  console.error('All vision model attempts failed:', lastError?.message);
+  return res.status(502).json({ error: 'extraction_failed', message: lastError?.message });
 });
 
 // ═══════════════════════════════════════════════════════════════
 // WEBSOCKET
 // ═══════════════════════════════════════════════════════════════
 
-const wss = new WebSocketServer({ server, path: '/live' });
+const wss = new WebSocketServer({ noServer: true });
 let clientSeq = 0;
+
+server.on('upgrade', (request, socket, head) => {
+  const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+  if (url.pathname === '/live') {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  }
+});
 
 wss.on('connection', (ws) => {
   const id = ++clientSeq;

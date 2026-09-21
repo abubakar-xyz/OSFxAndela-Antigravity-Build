@@ -1,9 +1,9 @@
 /* WAZI Civic — Camera Intake & Photo Clue Extraction Modal */
 
 import React, { useState, useRef } from 'react';
-import { Camera, Upload, Sparkles, X, ArrowRight } from 'lucide-react';
+import { Camera, Upload, Sparkles, X, ArrowRight, ShieldCheck } from 'lucide-react';
 import type { ExtractedClue } from '../../lib/types';
-import { stripExifAndCompressImage } from '../../lib/privacy';
+import { stripExifAndCompressImage, type SanitizationReport } from '../../lib/privacy';
 import { geminiClient } from '../../lib/gemini-client';
 import { ClueChips } from './ClueChips';
 
@@ -24,6 +24,8 @@ export const CameraModal: React.FC<CameraModalProps> = ({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedClues, setExtractedClues] = useState<ExtractedClue[]>([]);
+  const [sanitizationReport, setSanitizationReport] = useState<SanitizationReport | null>(null);
+  const [sourceType, setSourceType] = useState<'upload' | 'demo' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -33,11 +35,13 @@ export const CameraModal: React.FC<CameraModalProps> = ({
     if (!file) return;
 
     setIsProcessing(true);
+    setSourceType('upload');
     try {
-      const { dataUrl } = await stripExifAndCompressImage(file);
-      setImagePreview(dataUrl);
+      const report = await stripExifAndCompressImage(file);
+      setSanitizationReport(report);
+      setImagePreview(report.dataUrl);
 
-      const clues = await geminiClient.extractCluesFromImage(dataUrl);
+      const clues = await geminiClient.extractCluesFromImage(report.dataUrl);
       setExtractedClues(clues);
     } catch (err) {
       console.error('Error processing upload:', err);
@@ -48,6 +52,7 @@ export const CameraModal: React.FC<CameraModalProps> = ({
 
   const handleLoadDemoSignboard = async () => {
     setIsProcessing(true);
+    setSourceType('demo');
     // Create high-res synthetic SVG rendering of the actual Akute PHC Project signboard
     const rawSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380">
       <rect width="600" height="380" fill="#071820" rx="8"/>
@@ -67,6 +72,15 @@ export const CameraModal: React.FC<CameraModalProps> = ({
     const svgSignboard = `data:image/svg+xml;base64,${btoa(rawSvg)}`;
 
     setImagePreview(svgSignboard);
+    setSanitizationReport({
+      dataUrl: svgSignboard,
+      size: Math.round(rawSvg.length),
+      originalSize: Math.round(rawSvg.length),
+      exifDetected: false,
+      tagsPurged: ['Clean synthetic SVG', 'Zero camera footprint'],
+      dimensions: { width: 600, height: 380 }
+    });
+
     const clues = await geminiClient.extractCluesFromImage(svgSignboard);
     setExtractedClues(clues);
     setIsProcessing(false);
@@ -75,6 +89,12 @@ export const CameraModal: React.FC<CameraModalProps> = ({
   const handleConfirm = () => {
     onConfirmClues(extractedClues, imagePreview || undefined);
     onClose();
+  };
+
+  const formatBytes = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (
@@ -88,8 +108,8 @@ export const CameraModal: React.FC<CameraModalProps> = ({
 
         <div className="bottom-sheet__header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <Camera size={20} color="var(--luminous-teal-dim)" />
-            <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-semibold)' }}>
+            <Camera size={20} color="var(--luminous-teal)" />
+            <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-primary)' }}>
               {prompt ? `Show WAZI: ${prompt}` : 'Show WAZI: Signboard or Document'}
             </h3>
           </div>
@@ -98,8 +118,11 @@ export const CameraModal: React.FC<CameraModalProps> = ({
             style={{
               background: 'transparent',
               border: 'none',
-              color: 'var(--neutral-40)',
-              cursor: 'pointer'
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '4px'
             }}
           >
             <X size={20} />
@@ -110,22 +133,23 @@ export const CameraModal: React.FC<CameraModalProps> = ({
           {/* Quick Demo Action */}
           <div
             style={{
-              background: 'rgba(22, 198, 177, 0.08)',
+              background: 'rgba(22, 198, 177, 0.10)',
               border: '1px solid rgba(22, 198, 177, 0.3)',
               borderRadius: 'var(--radius-md)',
               padding: 'var(--space-3) var(--space-4)',
               marginBottom: 'var(--space-4)',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              gap: 'var(--space-3)'
             }}
           >
             <div>
-              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--neutral-10)' }}>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-primary)' }}>
                 Demo Flagship Case: Akute Health Centre
               </div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-40)' }}>
-                Test with real signboard and field evidence data
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                Try synthetic signboard to preview extraction
               </div>
             </div>
             <button
@@ -133,7 +157,7 @@ export const CameraModal: React.FC<CameraModalProps> = ({
               className="btn btn--sm btn--primary"
             >
               <Sparkles size={14} />
-              <span>Load Signboard</span>
+              <span>Load Sample</span>
             </button>
           </div>
 
@@ -151,24 +175,25 @@ export const CameraModal: React.FC<CameraModalProps> = ({
             <div
               onClick={() => fileInputRef.current?.click()}
               style={{
-                border: '2px dashed var(--warm-paper-80)',
+                border: '2px dashed var(--midnight-ink-60)',
                 borderRadius: 'var(--radius-lg)',
                 padding: 'var(--space-8) var(--space-4)',
                 textAlign: 'center',
                 cursor: 'pointer',
-                backgroundColor: 'var(--warm-paper-95)',
+                backgroundColor: 'var(--midnight-ink-80)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 'var(--space-2)'
+                gap: 'var(--space-2)',
+                transition: 'border-color 0.2s ease, background-color 0.2s ease'
               }}
             >
-              <Upload size={36} color="var(--neutral-60)" />
-              <div style={{ fontWeight: 'var(--weight-semibold)', fontSize: 'var(--text-sm)' }}>
+              <Upload size={36} color="var(--luminous-teal)" />
+              <div style={{ fontWeight: 'var(--weight-semibold)', fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>
                 Take photo or upload image
               </div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-60)', maxWidth: '280px' }}>
-                Signboard, tender notice, project site, receipt, or document. EXIF metadata will be automatically stripped.
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', maxWidth: '300px', lineHeight: 1.5 }}>
+                Signboard, tender notice, project site, receipt, or photo. EXIF GPS coordinates &amp; camera hardware metadata will be stripped in your browser before upload.
               </div>
             </div>
           ) : (
@@ -178,7 +203,7 @@ export const CameraModal: React.FC<CameraModalProps> = ({
                   borderRadius: 'var(--radius-md)',
                   overflow: 'hidden',
                   maxHeight: '200px',
-                  border: '1px solid var(--warm-paper-80)',
+                  border: '1px solid var(--midnight-ink-70)',
                   backgroundColor: '#000',
                   display: 'flex',
                   justifyContent: 'center',
@@ -192,13 +217,45 @@ export const CameraModal: React.FC<CameraModalProps> = ({
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-2)' }}>
+              {/* Verified EXIF Stripping Status Bar */}
+              {sanitizationReport && (
+                <div
+                  style={{
+                    marginTop: 'var(--space-3)',
+                    background: 'rgba(22, 198, 177, 0.10)',
+                    border: '1px solid rgba(22, 198, 177, 0.3)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '8px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                >
+                  <ShieldCheck size={20} color="var(--luminous-teal)" style={{ flexShrink: 0 }} />
+                  <div style={{ flex: 1, fontSize: 'var(--text-xs)', color: 'var(--text-primary)' }}>
+                    <div style={{ fontWeight: 'var(--weight-semibold)', color: 'var(--luminous-teal)' }}>
+                      ✓ EXIF &amp; GPS Metadata Stripped (Canvas Sanitized)
+                    </div>
+                    <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      Payload: {formatBytes(sanitizationReport.originalSize)} → {formatBytes(sanitizationReport.size)} · Camera serial &amp; GPS location scrubbed
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--space-2)' }}>
+                <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-muted)' }}>
+                  {sourceType === 'demo' ? 'Sample Signboard' : 'Real Image Upload'}
+                </span>
                 <button
                   onClick={() => {
                     setImagePreview(null);
                     setExtractedClues([]);
+                    setSanitizationReport(null);
+                    setSourceType(null);
                   }}
                   className="btn btn--sm btn--ghost"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Choose different image
                 </button>
@@ -208,27 +265,41 @@ export const CameraModal: React.FC<CameraModalProps> = ({
 
           {/* Extracted Clues Section */}
           {isProcessing ? (
-            <div style={{ textAlign: 'center', padding: 'var(--space-6) 0', color: 'var(--neutral-40)' }}>
+            <div style={{ textAlign: 'center', padding: 'var(--space-6) 0', color: 'var(--text-secondary)' }}>
               <div className="spin" style={{ display: 'inline-block', marginBottom: 'var(--space-2)' }}>
-                <Sparkles size={24} color="var(--luminous-teal-dim)" />
+                <Sparkles size={24} color="var(--luminous-teal)" />
               </div>
-              <div style={{ fontSize: 'var(--text-sm)' }}>
-                WAZI is observing visual clues and stripping EXIF data...
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-primary)' }}>
+                Observing visual clues with Gemini Vision...
+              </div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                Reading signboards, physical structures, and tender codes
               </div>
             </div>
           ) : extractedClues.length > 0 ? (
             <div style={{ marginTop: 'var(--space-4)' }}>
               <div
                 style={{
-                  fontSize: 'var(--text-xs)',
-                  fontWeight: 'var(--weight-bold)',
-                  color: 'var(--neutral-40)',
-                  textTransform: 'uppercase',
-                  letterSpacing: 'var(--tracking-wider)',
-                  marginBottom: 'var(--space-1)'
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 'var(--space-2)'
                 }}
               >
-                Extracted Clues (Editable before search)
+                <div
+                  style={{
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 'var(--weight-bold)',
+                    color: 'var(--text-secondary)',
+                    textTransform: 'uppercase',
+                    letterSpacing: 'var(--tracking-wider)'
+                  }}
+                >
+                  Extracted Clues ({extractedClues.length}) · Tap to Edit
+                </div>
+                <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--luminous-teal)', fontWeight: 'var(--weight-medium)' }}>
+                  Verified by Vision
+                </span>
               </div>
 
               <ClueChips

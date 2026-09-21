@@ -25,6 +25,7 @@ import { ActionDock } from './components/ui/ActionDock';
 import { PrivacyShield } from './components/ui/PrivacyShield';
 import { SettingsModal } from './components/ui/SettingsModal';
 import { LanguageSelectorModal } from './components/ui/LanguageSelectorModal';
+import { WorkflowNav, type WorkflowView } from './components/ui/WorkflowNav';
 import { CameraModal } from './components/workspace/CameraModal';
 import { EvidenceWorkspace } from './components/workspace/EvidenceWorkspace';
 import { DraftStudio } from './components/draft/DraftStudio';
@@ -373,69 +374,78 @@ export const App: React.FC = () => {
             : ''
         }`}
       >
-        {currentView === 'home' && (
-          <header className="top-nav-bar">
-            <PrivacyShield isMicActive={isListening} />
+        <header className="top-nav-bar">
+          <PrivacyShield isMicActive={isListening} />
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              <button
-                onClick={() => setIsLanguageModalOpen(true)}
-                aria-label={
-                  detectedLanguage
-                    ? `WAZI is speaking ${languageLabel}, detected automatically`
-                    : `Language hint: ${languageLabel}`
-                }
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: 'var(--midnight-ink-80)',
-                  border: `1px solid ${detectedLanguage ? 'var(--luminous-teal)' : 'var(--midnight-ink-70)'}`,
-                  borderRadius: '20px',
-                  padding: '6px 12px',
-                  color: 'var(--warm-paper)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
-              >
-                {detectedLanguage && (
-                  <span
-                    aria-hidden
-                    style={{
-                      width: '6px',
-                      height: '6px',
-                      borderRadius: '50%',
-                      background: 'var(--luminous-teal)',
-                      boxShadow: '0 0 6px var(--luminous-teal)'
-                    }}
-                  />
-                )}
-                {languageLabel}
-              </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <button
+              onClick={() => setIsLanguageModalOpen(true)}
+              aria-label={
+                detectedLanguage
+                  ? `WAZI is speaking ${languageLabel}, detected automatically`
+                  : `Language hint: ${languageLabel}`
+              }
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'var(--midnight-ink-80)',
+                border: `1px solid ${detectedLanguage ? 'var(--luminous-teal)' : 'var(--midnight-ink-70)'}`,
+                borderRadius: '20px',
+                padding: '6px 12px',
+                color: 'var(--warm-paper)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              {detectedLanguage && (
+                <span
+                  aria-hidden
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    background: 'var(--luminous-teal)',
+                    boxShadow: '0 0 6px var(--luminous-teal)'
+                  }}
+                />
+              )}
+              {languageLabel}
+            </button>
 
-              <button
-                onClick={() => setIsSettingsOpen(true)}
-                aria-label="App settings and preferences"
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: 'var(--midnight-ink-80)',
-                  border: '1px solid var(--midnight-ink-70)',
-                  color: 'var(--warm-paper)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  WebkitTapHighlightColor: 'transparent'
-                }}
-              >
-                <SettingsIcon size={16} />
-              </button>
-            </div>
-          </header>
-        )}
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              aria-label="App settings and preferences"
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: 'var(--midnight-ink-80)',
+                border: '1px solid var(--midnight-ink-70)',
+                color: 'var(--warm-paper)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent'
+              }}
+            >
+              <SettingsIcon size={16} />
+            </button>
+          </div>
+        </header>
+
+        {/* Persistent Workflow Navigation across all workspaces */}
+        <WorkflowNav
+          currentView={currentView}
+          onNavigate={(view: WorkflowView) => {
+            setCurrentView(view);
+            sounds.playTap();
+          }}
+          isLiveActive={isConnected}
+          savedCasesCount={savedCases.length}
+        />
 
         {safetyAlert && <SafetyBanner alert={safetyAlert} onDismiss={() => setSafetyAlert(null)} />}
 
@@ -448,8 +458,9 @@ export const App: React.FC = () => {
               flexDirection: 'column',
               justifyContent: 'space-between',
               alignItems: 'center',
-              padding: 'var(--space-2) 0 calc(var(--safe-bottom) + 70px)',
-              position: 'relative'
+              padding: 'var(--space-1) 0 calc(var(--safe-bottom) + 70px)',
+              position: 'relative',
+              minHeight: 0
             }}
           >
             <div
@@ -458,15 +469,16 @@ export const App: React.FC = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: 'var(--space-4)',
+                justifyContent: transcripts.length > 1 ? 'flex-start' : 'center',
+                gap: 'var(--space-3)',
                 width: '100%',
-                padding: 'var(--space-4) 0'
+                padding: 'var(--space-1) 0',
+                minHeight: 0
               }}
             >
               <WaziCharacter
                 state={waziState}
-                size={160}
+                size={transcripts.length > 1 ? 68 : 104}
                 micLevel={micLevel}
                 speakerLevel={speakerLevel}
                 onClick={() => {
@@ -483,6 +495,7 @@ export const App: React.FC = () => {
                     : captionText
                 }
                 isThinking={waziState === 'thinking'}
+                isSpeaking={waziState === 'speaking'}
                 onQuickPrompt={handleUserQuery}
               />
             </div>
@@ -493,8 +506,9 @@ export const App: React.FC = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 'var(--space-4)',
-                zIndex: 10
+                gap: 'var(--space-3)',
+                zIndex: 10,
+                marginTop: 'auto'
               }}
             >
               <TalkButton isListening={isConnected} onToggle={toggleListening} />

@@ -62,25 +62,22 @@ export const WaziCharacter: React.FC<WaziCharacterProps> = ({
     setMousePos({ x: 0, y: 0 });
   };
 
-  // RMS-driven dynamic scale for the core orb
+  // RMS-driven dynamic scale for the core orb — capped tightly to prevent intrusion over text
   const coreScale = isSpeaking
-    ? 1 + speakerLevel * 1.5  // Pulse with voice amplitude
+    ? 1 + Math.min(Math.max(speakerLevel, 0), 0.3) * 0.04  // Crisp +1.2% max micro-pulse
     : isListening
-    ? 1 + micLevel * 0.8      // Softer breathing with mic
+    ? 1 + Math.min(Math.max(micLevel, 0), 0.3) * 0.02      // Gentle +0.6% breathing
     : 1;
 
   // Head tilt: subtle rotation based on state. When speaking, the tilt follows
-  // the voice amplitude itself — `speakerLevel` is now sampled from the audio
-  // actually leaving the speakers, so the head moves with the sound rather than
-  // with a clock read during render (which only advanced when React happened to
-  // re-render, and made the component impure into the bargain).
+  // the voice amplitude itself gently without extreme jumps.
   const headTilt = isSpeaking
-    ? 1.5 + (speakerLevel - 0.35) * 4
+    ? 1.0 + (Math.min(speakerLevel, 0.6) - 0.25) * 2
     : isListening ? -1
     : isThinking ? 2 : 0;
   
-  // Mouth opening mapped to speakerLevel
-  const mouthOpenAmount = isSpeaking ? speakerLevel * 100 : 0;
+  // Mouth opening mapped gently to speakerLevel
+  const mouthOpenAmount = isSpeaking ? Math.min(speakerLevel, 0.6) * 60 : 0;
 
   // Eye animation: gaze drift when idle, mouse tracking when active
   const eyeTransform = isResting
@@ -109,7 +106,8 @@ export const WaziCharacter: React.FC<WaziCharacterProps> = ({
         cursor: onClick ? 'pointer' : 'default',
         perspective: '1000px',
         transition: 'transform var(--duration-normal) var(--ease-spring)',
-        animation: isError ? 'wazi-error-shake 0.5s ease-in-out' : 'none'
+        animation: isError ? 'wazi-error-shake 0.5s ease-in-out' : 'none',
+        flexShrink: 0
       }}
     >
       {/* 3D Container with Parallax Tilt + Head Tilt */}
@@ -138,12 +136,12 @@ export const WaziCharacter: React.FC<WaziCharacterProps> = ({
               ? 'radial-gradient(circle at 30% 30%, #F4B942 0%, #D4872E 40%, #8B4513 80%)'
               : 'radial-gradient(circle at 30% 30%, #8DF5E7 0%, #16C6B1 40%, #0B7A6E 80%)',
             boxShadow: isError
-              ? '0 0 40px rgba(244, 185, 66, 0.6), 0 0 80px rgba(244, 185, 66, 0.3)'
+              ? '0 0 12px rgba(244, 185, 66, 0.35)'
               : isWaiting || isAttention
-              ? 'var(--wazi-glow-amber)'
-              : 'var(--wazi-glow)',
+              ? '0 0 12px rgba(244, 185, 66, 0.25)'
+              : '0 0 12px rgba(22, 198, 177, 0.2)',
             transform: `translateZ(-10px) scale(${coreScale})`,
-            transition: isSpeaking || isListening ? 'transform 0.08s ease-out' : 'all 0.4s ease'
+            transition: isSpeaking || isListening ? 'transform 0.1s ease-out' : 'all 0.4s ease'
           }}
         />
 

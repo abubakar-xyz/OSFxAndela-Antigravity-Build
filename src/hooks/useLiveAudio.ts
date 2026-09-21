@@ -121,6 +121,7 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
   const tabIdRef = useRef<string>('');
   const levelRafRef = useRef<number | null>(null);
   const wakeFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingTextRef = useRef<string | null>(null);
   // Reconnection re-enters connect(), so it goes through a ref rather than the
   // callback capturing itself while it is still being initialised.
   const connectRef = useRef<() => Promise<void>>(async () => {});
@@ -328,6 +329,13 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
       hasConnectedRef.current = true;
       resetIdleTimer();
 
+      if (pendingTextRef.current) {
+        const queued = pendingTextRef.current;
+        pendingTextRef.current = null;
+        send({ type: 'text', text: queued });
+        setWaziState('thinking');
+      }
+
       // Don't leave the UI mid-handshake if the greeting never arrives.
       if (wakeFallbackRef.current) clearTimeout(wakeFallbackRef.current);
       wakeFallbackRef.current = setTimeout(() => {
@@ -340,6 +348,12 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
       if (event.data instanceof ArrayBuffer) {
         // Hot path: WAZI's voice. Straight into the playback queue.
         playerRef.current?.enqueue(new Int16Array(event.data));
+        return;
+      }
+      if (typeof Blob !== 'undefined' && event.data instanceof Blob) {
+        event.data.arrayBuffer().then((buf) => {
+          playerRef.current?.enqueue(new Int16Array(buf));
+        }).catch(() => {});
         return;
       }
       try {
@@ -439,11 +453,18 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
   const sendText = useCallback(
     (text: string) => {
       if (!text.trim()) return false;
-      if (wsRef.current?.readyState !== WebSocket.OPEN) return false;
-      send({ type: 'text', text });
-      setWaziState('thinking');
-      resetIdleTimer();
-      return true;
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        send({ type: 'text', text });
+        setWaziState('thinking');
+        resetIdleTimer();
+        return true;
+      }
+      if (wsRef.current?.readyState === WebSocket.CONNECTING) {
+        pendingTextRef.current = text;
+        setWaziState('thinking');
+        return true;
+      }
+      return false;
     },
     [resetIdleTimer, send]
   );

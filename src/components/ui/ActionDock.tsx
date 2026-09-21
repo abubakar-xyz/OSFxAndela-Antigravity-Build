@@ -112,7 +112,7 @@ export const ActionDock: React.FC<ActionDockProps> = ({
               style={{
                 fontSize: 'var(--text-2xs)',
                 fontWeight: 'var(--weight-bold)',
-                color: 'var(--neutral-60)',
+                color: 'var(--text-muted)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.08em'
               }}
@@ -121,7 +121,7 @@ export const ActionDock: React.FC<ActionDockProps> = ({
             </span>
             <button
               onClick={() => setIsOpen(false)}
-              style={{ background: 'transparent', border: 'none', color: 'var(--neutral-60)', cursor: 'pointer' }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
             >
               <X size={16} />
             </button>
@@ -139,7 +139,7 @@ export const ActionDock: React.FC<ActionDockProps> = ({
                 borderRadius: 'var(--radius-sm)',
                 background: 'transparent',
                 border: 'none',
-                color: 'var(--warm-paper)',
+                color: '#FFFFFF',
                 textAlign: 'left',
                 cursor: 'pointer',
                 transition: 'background var(--duration-fast)',
@@ -163,10 +163,10 @@ export const ActionDock: React.FC<ActionDockProps> = ({
                 {act.icon}
               </div>
               <div>
-                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)' }}>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: '#FFFFFF' }}>
                   {act.label}
                 </div>
-                <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--neutral-60)', marginTop: '1px' }}>
+                <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-secondary)', marginTop: '1px' }}>
                   {act.desc}
                 </div>
               </div>
@@ -188,7 +188,7 @@ export const ActionDock: React.FC<ActionDockProps> = ({
           borderRadius: 'var(--radius-full)',
           background: 'var(--midnight-ink-80)',
           border: '1px solid var(--midnight-ink-70)',
-          color: 'var(--warm-paper)',
+          color: '#FFFFFF',
           fontSize: 'var(--text-xs)',
           fontWeight: 'var(--weight-semibold)',
           cursor: 'pointer',

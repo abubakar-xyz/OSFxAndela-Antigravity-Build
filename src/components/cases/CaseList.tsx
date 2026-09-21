@@ -20,8 +20,8 @@ export const CaseList: React.FC<CaseListProps> = ({
   waziState,
   onSelectCase,
   onReturnHome,
-  onOpenEvidence,
-  onOpenDraftStudio
+  onOpenEvidence: _onOpenEvidence,
+  onOpenDraftStudio: _onOpenDraftStudio
 }) => {
   return (
     <div
@@ -31,8 +31,8 @@ export const CaseList: React.FC<CaseListProps> = ({
         minHeight: '100dvh',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: 'var(--warm-paper)',
-        color: 'var(--neutral-10)',
+        backgroundColor: 'var(--midnight-ink)',
+        color: 'var(--text-primary)',
         padding: '0 var(--space-4) calc(var(--safe-bottom) + var(--space-8))',
         animation: 'slide-up var(--duration-normal) var(--ease-out)',
         boxSizing: 'border-box'
@@ -44,15 +44,15 @@ export const CaseList: React.FC<CaseListProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: 'calc(var(--safe-top) + var(--space-3)) 0 var(--space-3)',
-          borderBottom: '1px solid var(--warm-paper-80)',
+          padding: 'calc(var(--safe-top) + var(--space-2)) 0 var(--space-3)',
+          borderBottom: '1px solid var(--midnight-ink-70)',
           marginBottom: 'var(--space-3)'
         }}
       >
         <button
           onClick={onReturnHome}
           className="btn btn--sm btn--ghost"
-          style={{ paddingLeft: '2px' }}
+          style={{ paddingLeft: '2px', color: 'var(--text-secondary)' }}
         >
           <ArrowLeft size={16} />
           <span>Back to WAZI</span>
@@ -65,24 +65,11 @@ export const CaseList: React.FC<CaseListProps> = ({
         />
       </div>
 
-      {/* Tabs */}
-      <div className="tab-strip" style={{ padding: '0 0 var(--space-3) 0' }}>
-        <button className="tab-pill" onClick={onOpenEvidence}>
-          Evidence Board
-        </button>
-        <button className="tab-pill" onClick={onOpenDraftStudio}>
-          Draft Studio
-        </button>
-        <button className="tab-pill active">
-          Saved Cases ({cases.length})
-        </button>
-      </div>
-
       <div style={{ margin: 'var(--space-2) 0 var(--space-4)' }}>
-        <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
+        <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)', color: '#FFFFFF' }}>
           Your Civic Cases & Evidence
         </h2>
-        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-60)', marginTop: '2px' }}>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '2px' }}>
           Locally saved evidence dossiers, official records, and generated documents
         </p>
       </div>
@@ -92,14 +79,14 @@ export const CaseList: React.FC<CaseListProps> = ({
           style={{
             textAlign: 'center',
             padding: 'var(--space-12) var(--space-4)',
-            background: 'var(--neutral-100)',
+            background: 'var(--midnight-ink-80)',
             borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--warm-paper-80)'
+            border: '1px solid var(--midnight-ink-70)'
           }}
         >
-          <FolderOpen size={40} color="var(--neutral-60)" style={{ margin: '0 auto var(--space-2)' }} />
-          <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-semibold)' }}>No saved cases yet</h3>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-60)', marginTop: '4px', maxWidth: '260px', margin: '4px auto 0' }}>
+          <FolderOpen size={40} color="var(--text-muted)" style={{ margin: '0 auto var(--space-2)' }} />
+          <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-semibold)', color: '#FFFFFF' }}>No saved cases yet</h3>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px', maxWidth: '260px', margin: '4px auto 0' }}>
             Show WAZI a project signboard or ask about a civic issue to generate your first verified case.
           </p>
         </div>

@@ -26,8 +26,8 @@ html, body {
   overscroll-behavior-x: none;
   margin: 0;
   padding: 0;
-  background-color: var(--warm-paper-95);
-  color: var(--neutral-10);
+  background-color: var(--midnight-ink);
+  color: var(--text-primary);
   font-family: var(--font-primary);
   user-select: none;
   -webkit-user-select: none;

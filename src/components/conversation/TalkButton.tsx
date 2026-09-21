@@ -21,10 +21,11 @@ export const TalkButton: React.FC<TalkButtonProps> = ({
         position: 'relative',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        margin: '6px 0'
       }}
     >
-      <VoiceRings active={isListening} size={100} />
+      <VoiceRings active={isListening} size={76} />
 
       <button
         onClick={onToggle}
@@ -34,8 +35,8 @@ export const TalkButton: React.FC<TalkButtonProps> = ({
         style={{
           position: 'relative',
           zIndex: 2,
-          width: '76px',
-          height: '76px',
+          width: '64px',
+          height: '64px',
           borderRadius: '50%',
           border: 'none',
           cursor: disabled ? 'not-allowed' : 'pointer',
@@ -49,17 +50,17 @@ export const TalkButton: React.FC<TalkButtonProps> = ({
           justifyContent: 'center',
           gap: '2px',
           boxShadow: isListening
-            ? '0 0 28px rgba(244, 185, 66, 0.55)'
-            : '0 8px 24px rgba(22, 198, 177, 0.35)',
-          transform: isListening ? 'scale(1.05)' : 'scale(1)',
+            ? '0 0 0 3px rgba(244, 185, 66, 0.25), 0 4px 16px rgba(244, 185, 66, 0.35)'
+            : '0 4px 14px rgba(22, 198, 177, 0.28), 0 0 0 1px rgba(22, 198, 177, 0.2)',
+          transform: isListening ? 'scale(1.03)' : 'scale(1)',
           transition: 'all var(--duration-fast) var(--ease-spring)',
           WebkitTapHighlightColor: 'transparent'
         }}
       >
         {isListening ? (
-          <Square size={28} strokeWidth={2.5} fill="var(--midnight-ink)" />
+          <Square size={22} strokeWidth={2.5} fill="var(--midnight-ink)" />
         ) : (
-          <Mic size={30} strokeWidth={2.2} />
+          <Mic size={24} strokeWidth={2.2} />
         )}
         <span
           style={{

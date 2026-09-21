@@ -16,9 +16,9 @@ export const SearchProgress: React.FC<SearchProgressProps> = ({ steps }) => {
         flexDirection: 'column',
         gap: 'var(--space-3)',
         padding: 'var(--space-4)',
-        background: 'var(--neutral-100)',
+        background: 'var(--midnight-ink-80)',
         borderRadius: 'var(--radius-md)',
-        border: '1px solid var(--warm-paper-80)',
+        border: '1px solid var(--midnight-ink-70)',
         boxShadow: 'var(--shadow-sm)',
         margin: 'var(--space-3) 0'
       }}
@@ -27,7 +27,7 @@ export const SearchProgress: React.FC<SearchProgressProps> = ({ steps }) => {
         style={{
           fontSize: 'var(--text-xs)',
           fontWeight: 'var(--weight-bold)',
-          color: 'var(--neutral-40)',
+          color: 'var(--text-secondary)',
           textTransform: 'uppercase',
           letterSpacing: 'var(--tracking-wider)'
         }}
@@ -48,8 +48,8 @@ export const SearchProgress: React.FC<SearchProgressProps> = ({ steps }) => {
               display: 'flex',
               alignItems: 'flex-start',
               gap: 'var(--space-3)',
-              padding: '6px 0',
-              borderBottom: '1px solid var(--warm-paper-90)',
+              padding: '8px 0',
+              borderBottom: '1px solid var(--midnight-ink-70)',
               animation: 'fade-in 0.3s ease-out'
             }}
           >
@@ -64,7 +64,7 @@ export const SearchProgress: React.FC<SearchProgressProps> = ({ steps }) => {
                 <AlertCircle size={18} style={{ color: 'var(--conflicting-coral)' }} />
               )}
               {isPending && (
-                <Circle size={18} style={{ color: 'var(--neutral-80)' }} />
+                <Circle size={18} style={{ color: 'var(--text-muted)' }} />
               )}
             </div>
 
@@ -73,7 +73,7 @@ export const SearchProgress: React.FC<SearchProgressProps> = ({ steps }) => {
                 style={{
                   fontSize: 'var(--text-sm)',
                   fontWeight: isSearching ? 'var(--weight-semibold)' : 'var(--weight-medium)',
-                  color: isPending ? 'var(--neutral-60)' : 'var(--neutral-10)'
+                  color: isPending ? 'var(--text-muted)' : 'var(--text-primary)'
                 }}
               >
                 {step.title}
@@ -83,8 +83,8 @@ export const SearchProgress: React.FC<SearchProgressProps> = ({ steps }) => {
                 style={{
                   fontSize: 'var(--text-xs)',
                   fontFamily: 'var(--font-mono)',
-                  color: 'var(--neutral-60)',
-                  marginTop: '1px'
+                  color: 'var(--text-secondary)',
+                  marginTop: '2px'
                 }}
               >
                 {step.source}
@@ -94,11 +94,12 @@ export const SearchProgress: React.FC<SearchProgressProps> = ({ steps }) => {
                 <div
                   style={{
                     fontSize: 'var(--text-xs)',
-                    color: isConflict ? 'var(--conflicting-coral)' : 'var(--neutral-20)',
+                    color: isConflict ? 'var(--conflicting-coral)' : 'var(--text-secondary)',
                     fontWeight: isConflict ? 'var(--weight-semibold)' : 'var(--weight-regular)',
-                    marginTop: '3px',
-                    padding: '2px 6px',
-                    background: isConflict ? 'var(--conflicting-coral-bg)' : 'var(--warm-paper-95)',
+                    marginTop: '4px',
+                    padding: '2px 8px',
+                    background: isConflict ? 'var(--conflicting-coral-bg)' : 'var(--midnight-ink-90)',
+                    border: isConflict ? '1px solid var(--conflicting-coral-border)' : '1px solid var(--midnight-ink-70)',
                     borderRadius: 'var(--radius-xs)',
                     display: 'inline-block'
                   }}

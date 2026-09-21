@@ -35,8 +35,8 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
   civicCase,
   waziState,
   onReturnHome,
-  onOpenEvidence,
-  onOpenSavedCases,
+  onOpenEvidence: _onOpenEvidence,
+  onOpenSavedCases: _onOpenSavedCases,
   onSaveCase,
   onShowToast
 }) => {
@@ -58,7 +58,7 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
     setDraft(newDraft);
     const customized = applyDisclosureToDraft(newDraft.body, disclosureSettings);
     setEditableBody(customized);
-  }, [selectedFormat, tone, length, civicCase]);
+  }, [selectedFormat, tone, length, civicCase, disclosureSettings]);
 
   // Update body when disclosure settings change
   const handleUpdateDisclosure = (newSettings: DisclosureSettings) => {
@@ -157,8 +157,8 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
         minHeight: '100dvh',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: 'var(--neutral-100)',
-        color: 'var(--neutral-10)',
+        backgroundColor: 'var(--midnight-ink)',
+        color: 'var(--text-primary)',
         padding: '0 var(--space-4) calc(var(--safe-bottom) + var(--space-8))',
         animation: 'slide-up var(--duration-normal) var(--ease-out)',
         boxSizing: 'border-box'
@@ -170,15 +170,15 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: 'calc(var(--safe-top) + var(--space-3)) 0 var(--space-3)',
-          borderBottom: '1px solid var(--warm-paper-80)',
+          padding: 'calc(var(--safe-top) + var(--space-2)) 0 var(--space-3)',
+          borderBottom: '1px solid var(--midnight-ink-70)',
           marginBottom: 'var(--space-3)'
         }}
       >
         <button
           onClick={onReturnHome}
           className="btn btn--sm btn--ghost"
-          style={{ paddingLeft: '2px' }}
+          style={{ paddingLeft: '2px', color: 'var(--text-secondary)' }}
         >
           <ArrowLeft size={16} />
           <span>Back to WAZI</span>
@@ -189,19 +189,6 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
           statusText="Draft Studio"
           onClick={onReturnHome}
         />
-      </div>
-
-      {/* Tabs */}
-      <div className="tab-strip" style={{ padding: '0 0 var(--space-3) 0' }}>
-        <button className="tab-pill" onClick={onOpenEvidence}>
-          Evidence Board
-        </button>
-        <button className="tab-pill active">
-          Draft Studio
-        </button>
-        <button className="tab-pill" onClick={onOpenSavedCases}>
-          Saved Cases
-        </button>
       </div>
 
       {/* Format Selector Pills */}
@@ -223,8 +210,8 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
       {route && (
         <div
           style={{
-            background: 'var(--warm-paper-95)',
-            border: '1px solid var(--warm-paper-80)',
+            background: 'var(--midnight-ink-80)',
+            border: '1px solid var(--midnight-ink-70)',
             borderRadius: 'var(--radius-md)',
             padding: 'var(--space-3) var(--space-4)',
             marginBottom: 'var(--space-4)',
@@ -232,7 +219,7 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 'var(--weight-bold)', color: 'var(--neutral-60)', textTransform: 'uppercase' }}>
+            <span style={{ fontWeight: 'var(--weight-bold)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
               Verified Institutional Route
             </span>
             <span style={{ color: 'var(--verified-green)', fontWeight: 'var(--weight-semibold)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
@@ -240,12 +227,12 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
             </span>
           </div>
 
-          <div style={{ fontWeight: 'var(--weight-semibold)', fontSize: 'var(--text-sm)', color: 'var(--neutral-10)', marginTop: '2px' }}>
+          <div style={{ fontWeight: 'var(--weight-semibold)', fontSize: 'var(--text-sm)', color: '#FFFFFF', marginTop: '2px' }}>
             {route.agency}
           </div>
 
-          <div style={{ color: 'var(--neutral-40)', marginTop: '2px' }}>
-            Recipient: {route.role} &bull; <span style={{ fontFamily: 'var(--font-mono)' }}>{route.verifiedEmail}</span>
+          <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+            Recipient: {route.role} &bull; <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--luminous-teal)' }}>{route.verifiedEmail}</span>
           </div>
 
           {/* Escalation Pathway if Agency Fails to Act */}
@@ -254,11 +241,11 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
               style={{
                 marginTop: 'var(--space-2)',
                 paddingTop: 'var(--space-2)',
-                borderTop: '1px dashed var(--warm-paper-80)',
+                borderTop: '1px dashed var(--midnight-ink-70)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 'var(--space-2)',
-                color: 'var(--neutral-40)'
+                color: 'var(--text-secondary)'
               }}
             >
               <AlertOctagon size={13} color="var(--reported-amber)" />
@@ -277,12 +264,13 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: 'var(--space-2) var(--space-3)',
-          background: 'var(--warm-paper-90)',
+          background: 'var(--midnight-ink-80)',
+          border: '1px solid var(--midnight-ink-70)',
           borderRadius: 'var(--radius-sm)',
           marginBottom: 'var(--space-2)'
         }}
       >
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-40)' }}>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
           Review wording before dispatch or export
         </span>
         <button

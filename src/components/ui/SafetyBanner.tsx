@@ -50,10 +50,10 @@ export const SafetyBanner: React.FC<SafetyBannerProps> = ({ alert, onDismiss }) 
     <AlertTriangle size={20} color="var(--sun-amber)" style={{ flexShrink: 0, marginTop: '2px' }} />
 
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--warm-paper)' }}>
+      <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
         Your safety comes first
       </div>
-      <p style={{ margin: '4px 0 0', fontSize: '14px', color: 'var(--warm-paper)', lineHeight: 1.45 }}>
+      <p style={{ margin: '4px 0 0', fontSize: '14px', color: 'var(--text-primary)', lineHeight: 1.45 }}>
         {alert.summary}
       </p>
       {alert.guidance && (

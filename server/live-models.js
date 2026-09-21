@@ -19,20 +19,20 @@
 
 export const LIVE_MODELS = [
   {
-    id: 'gemini-3.1-flash-live-preview',
-    label: 'Gemini 3.1 Flash Live',
+    id: 'gemini-3.8-live',
+    label: 'Gemini 3.8 Live',
     outputSampleRate: 24000,
     capabilities: {
       tools: true,
       affectiveDialog: false,
-      contextWindowCompression: true,
+      contextWindowCompression: false,
       sessionResumption: true,
       transcription: true
     }
   },
   {
-    id: 'gemini-2.5-flash-native-audio-latest',
-    label: 'Gemini 2.5 Flash Native Audio',
+    id: 'gemini-2.5-flash-native-audio-preview-12-2025',
+    label: 'Gemini 2.5 Flash Native Audio (12-2025)',
     outputSampleRate: 24000,
     capabilities: {
       tools: true,
@@ -43,8 +43,8 @@ export const LIVE_MODELS = [
     }
   },
   {
-    id: 'gemini-2.5-flash-native-audio-preview-12-2025',
-    label: 'Gemini 2.5 Flash Native Audio (12-2025)',
+    id: 'gemini-2.5-flash-native-audio-latest',
+    label: 'Gemini 2.5 Flash Native Audio',
     outputSampleRate: 24000,
     capabilities: {
       tools: true,
@@ -70,13 +70,12 @@ export function buildModelChain(preferredId) {
   const known = new Map(LIVE_MODELS.map((m) => [m.id, m]));
   const chain = [];
 
-  if (preferredId) {
+  if (preferredId && typeof preferredId === 'string' && preferredId.startsWith('gemini-')) {
     chain.push(
       known.get(preferredId) || {
         id: preferredId,
         label: preferredId,
         outputSampleRate: OUTPUT_SAMPLE_RATE,
-        // Unknown model: assume the conservative intersection of capabilities.
         capabilities: {
           tools: true,
           affectiveDialog: false,

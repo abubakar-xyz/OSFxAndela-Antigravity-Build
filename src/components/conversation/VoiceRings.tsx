@@ -10,8 +10,8 @@ interface VoiceRingsProps {
 
 export const VoiceRings: React.FC<VoiceRingsProps> = ({
   active,
-  color = 'var(--luminous-teal)',
-  size = 180
+  color = 'var(--sun-amber)',
+  size = 68
 }) => {
   if (!active) return null;
 
@@ -29,21 +29,16 @@ export const VoiceRings: React.FC<VoiceRingsProps> = ({
         zIndex: 1
       }}
     >
-      {[0, 1, 2].map((index) => (
-        <div
-          key={index}
-          style={{
-            position: 'absolute',
-            width: '100%',
-            height: '100%',
-            borderRadius: '50%',
-            border: `2px solid ${color}`,
-            animation: 'voice-wave 2.2s infinite cubic-bezier(0.1, 0.7, 0.4, 1)',
-            animationDelay: `${index * 0.7}s`,
-            opacity: 0
-          }}
-        />
-      ))}
+      <div
+        style={{
+          position: 'absolute',
+          inset: '-3px',
+          borderRadius: '50%',
+          border: `2px solid ${color}`,
+          opacity: 0.6,
+          animation: 'voice-contained-pulse 1.6s ease-in-out infinite'
+        }}
+      />
     </div>
   );
 };

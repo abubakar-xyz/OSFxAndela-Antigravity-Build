@@ -26,12 +26,14 @@ export const ToneControl: React.FC<ToneControlProps> = ({
     >
       {/* Tone Segmented Control */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-mono)' }}>
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-60)', fontWeight: 'var(--weight-medium)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wider)' }}>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 'var(--weight-medium)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wider)' }}>
           Tone
         </span>
         <div
           style={{
             display: 'inline-flex',
+            borderRadius: 'var(--radius-sm)',
+            overflow: 'hidden',
             border: '1px solid var(--midnight-ink-70)'
           }}
         >
@@ -40,14 +42,14 @@ export const ToneControl: React.FC<ToneControlProps> = ({
               key={t}
               onClick={() => onChangeTone(t)}
               style={{
-                padding: '4px 12px',
+                padding: '5px 12px',
                 border: 'none',
                 borderRight: t !== 'conciliatory' ? '1px solid var(--midnight-ink-70)' : 'none',
-                background: tone === t ? 'var(--midnight-ink-70)' : 'transparent',
-                color: tone === t ? 'var(--warm-paper)' : 'var(--neutral-40)',
+                background: tone === t ? 'var(--luminous-teal)' : 'var(--midnight-ink-80)',
+                color: tone === t ? 'var(--midnight-ink)' : 'var(--text-secondary)',
                 fontFamily: 'var(--font-mono)',
                 fontSize: 'var(--text-2xs)',
-                fontWeight: 'var(--weight-semibold)',
+                fontWeight: tone === t ? 'var(--weight-bold)' : 'var(--weight-medium)',
                 cursor: 'pointer',
                 textTransform: 'uppercase',
                 transition: 'all var(--duration-fast)',
@@ -62,12 +64,14 @@ export const ToneControl: React.FC<ToneControlProps> = ({
 
       {/* Length Segmented Control */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-mono)' }}>
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-60)', fontWeight: 'var(--weight-medium)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wider)' }}>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 'var(--weight-medium)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wider)' }}>
           Length
         </span>
         <div
           style={{
             display: 'inline-flex',
+            borderRadius: 'var(--radius-sm)',
+            overflow: 'hidden',
             border: '1px solid var(--midnight-ink-70)'
           }}
         >
@@ -76,14 +80,14 @@ export const ToneControl: React.FC<ToneControlProps> = ({
               key={l}
               onClick={() => onChangeLength(l)}
               style={{
-                padding: '4px 12px',
+                padding: '5px 12px',
                 border: 'none',
                 borderRight: l !== 'detailed' ? '1px solid var(--midnight-ink-70)' : 'none',
-                background: length === l ? 'var(--midnight-ink-70)' : 'transparent',
-                color: length === l ? 'var(--warm-paper)' : 'var(--neutral-40)',
+                background: length === l ? 'var(--luminous-teal)' : 'var(--midnight-ink-80)',
+                color: length === l ? 'var(--midnight-ink)' : 'var(--text-secondary)',
                 fontFamily: 'var(--font-mono)',
                 fontSize: 'var(--text-2xs)',
-                fontWeight: 'var(--weight-semibold)',
+                fontWeight: length === l ? 'var(--weight-bold)' : 'var(--weight-medium)',
                 cursor: 'pointer',
                 textTransform: 'uppercase',
                 transition: 'all var(--duration-fast)',

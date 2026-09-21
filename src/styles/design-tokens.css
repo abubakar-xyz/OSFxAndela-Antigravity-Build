@@ -4,27 +4,39 @@
 
 :root {
   /* Deep foundations */
-  --midnight-ink:        #071820;    /* Primary background, deep trust */
+  --midnight-ink:        #071820;    /* Primary background canvas, deep civic trust */
   --midnight-ink-95:     #051219;    /* Darkest background depth */
-  --midnight-ink-90:     #0A2230;    /* Elevated surfaces in dark mode */
-  --midnight-ink-80:     #132D3C;    /* Cards, overlays in dark context */
-  --midnight-ink-70:     #1E3A4A;    /* Subtle borders, dividers */
-  --midnight-ink-60:     #2B4C5F;    /* Muted elements in dark mode */
-  --midnight-ink-50:     #3A5F73;    /* Raised controls on a dark surface */
+  --midnight-ink-90:     #0A2230;    /* Secondary surface */
+  --midnight-ink-80:     #0E2636;    /* Card & container surfaces */
+  --midnight-ink-70:     #183B50;    /* Dividers & structured borders */
+  --midnight-ink-60:     #234B64;    /* Active borders */
+  --midnight-ink-50:     #32607D;    /* Elevated controls */
 
-  /* Semantic aliases used by the dark overlays (modals, sheets, banners).
-     These were referenced by components before they existed, which meant the
-     browser discarded those declarations: sheets rendered with no background
-     and secondary text inherited whatever was behind it. */
+  /* High Contrast Semantic Typography & Surfaces */
+  --bg-canvas:           #071820;    /* Unified root background */
+  --bg-surface:          #0E2636;    /* Primary card & message surface */
+  --bg-surface-elevated: #15384E;    /* Interactive elements & inputs */
+  --bg-surface-subtle:   #0A1F2C;    /* Subtle recessed wells */
+
+  --border-subtle:       rgba(255, 255, 255, 0.10);
+  --border-visible:      #1E445B;
+  --border-highlight:    #16C6B1;
+
+  --text-primary:        #FFFFFF;    /* 100% white, 16.5:1 contrast against dark background */
+  --text-secondary:      #A8C5D6;    /* 8.2:1 contrast against dark background */
+  --text-muted:          #749BB2;    /* 5.1:1 contrast, passes WCAG AA */
+  --text-on-accent:      #05151D;    /* Pure ink text on luminous teal/amber buttons */
+
+  /* Semantic aliases used by modals, sheets, banners */
   --obsidian:            #051219;    /* Deepest surface — bottom sheets, modals */
-  --stone-gray:          #8FA3AD;    /* Secondary text on a dark surface */
+  --stone-gray:          #A8C5D6;    /* Secondary text on a dark surface */
 
-  /* Warm grounds (Evidence & Draft workspaces) */
-  --warm-paper:          #F7F3E8;    /* Light mode background, document bg */
-  --warm-paper-95:       #F2EDE0;    /* Slightly recessed surfaces */
-  --warm-paper-90:       #EBE5D6;    /* Input fields, secondary bg */
-  --warm-paper-80:       #DDD7C7;    /* Borders in light mode */
-  --warm-paper-70:       #CBC4B2;    /* Emphasized borders in light mode */
+  /* Warm grounds (Reserved for light document print sheets if needed) */
+  --warm-paper:          #F7F3E8;
+  --warm-paper-95:       #F2EDE0;
+  --warm-paper-90:       #EBE5D6;
+  --warm-paper-80:       #DDD7C7;
+  --warm-paper-70:       #CBC4B2;
 
   /* The WAZI colors — define the luminous character */
   --luminous-teal:       #16C6B1;    /* WAZI's primary energy, CTAs */

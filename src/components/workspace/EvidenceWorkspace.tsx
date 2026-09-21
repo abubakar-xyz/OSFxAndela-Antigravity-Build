@@ -31,8 +31,8 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
   onReturnHome,
   onCheckAgain,
   onTakeAction,
-  onOpenDraftStudio,
-  onOpenSavedCases
+  onOpenDraftStudio: _onOpenDraftStudio,
+  onOpenSavedCases: _onOpenSavedCases
 }) => {
   return (
     <div
@@ -42,8 +42,8 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
         minHeight: '100dvh',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: 'var(--warm-paper)',
-        color: 'var(--neutral-10)',
+        backgroundColor: 'var(--midnight-ink)',
+        color: 'var(--text-primary)',
         padding: '0 var(--space-4) calc(var(--safe-bottom) + var(--space-8))',
         animation: 'slide-up var(--duration-normal) var(--ease-out)',
         boxSizing: 'border-box'
@@ -55,15 +55,15 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: 'calc(var(--safe-top) + var(--space-3)) 0 var(--space-3)',
-          borderBottom: '1px solid var(--warm-paper-80)',
+          padding: 'calc(var(--safe-top) + var(--space-2)) 0 var(--space-3)',
+          borderBottom: '1px solid var(--midnight-ink-70)',
           marginBottom: 'var(--space-3)'
         }}
       >
         <button
           onClick={onReturnHome}
           className="btn btn--sm btn--ghost"
-          style={{ paddingLeft: '2px' }}
+          style={{ paddingLeft: '2px', color: 'var(--text-secondary)' }}
         >
           <ArrowLeft size={16} />
           <span>Back to WAZI</span>
@@ -74,19 +74,6 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
           statusText={waziStatusText || (isSearching ? 'Searching...' : 'Evidence Ready')}
           onClick={onReturnHome}
         />
-      </div>
-
-      {/* Workspace Pill Navigation Strip */}
-      <div className="tab-strip" style={{ padding: '0 0 var(--space-3) 0' }}>
-        <button className="tab-pill active">
-          Evidence Board
-        </button>
-        <button className="tab-pill" onClick={onOpenDraftStudio}>
-          Draft Studio
-        </button>
-        <button className="tab-pill" onClick={onOpenSavedCases}>
-          Saved Cases
-        </button>
       </div>
 
       {/* Main Content Area */}
@@ -109,25 +96,25 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
           {civicCase.route && (
             <div
               style={{
-                background: 'var(--neutral-100)',
-                border: '1px solid var(--warm-paper-80)',
+                background: 'var(--midnight-ink-80)',
+                border: '1px solid var(--midnight-ink-70)',
                 borderRadius: 'var(--radius-md)',
                 padding: 'var(--space-3) var(--space-4)',
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: 'var(--space-3)',
-                boxShadow: 'var(--shadow-xs)'
+                boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)'
               }}
             >
-              <Building2 size={20} color="var(--luminous-teal-dim)" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <Building2 size={20} color="var(--luminous-teal)" style={{ marginTop: '2px', flexShrink: 0 }} />
               <div>
-                <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: 'var(--neutral-60)', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Responsible Authority Identified
                 </div>
-                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--neutral-10)' }}>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-primary)', marginTop: '2px' }}>
                   {civicCase.route.agency}
                 </div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-40)', marginTop: '2px' }}>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '2px' }}>
                   Verified contact: {civicCase.route.verifiedEmail}
                 </div>
               </div>

@@ -13,7 +13,7 @@ interface ClueChipsProps {
 export const ClueChips: React.FC<ClueChipsProps> = ({
   clues,
   onUpdateClue,
-  dark = false
+  dark = true
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState('');
@@ -58,8 +58,8 @@ export const ClueChips: React.FC<ClueChipsProps> = ({
                   onChange={(e) => setTempValue(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSave(clue)}
                   style={{
-                    background: dark ? 'var(--midnight-ink-90)' : 'var(--neutral-100)',
-                    color: dark ? 'var(--warm-paper)' : 'var(--neutral-10)',
+                    background: 'var(--midnight-ink-90)',
+                    color: 'var(--text-primary)',
                     border: '1px solid var(--luminous-teal)',
                     borderRadius: '4px',
                     fontSize: 'var(--text-xs)',

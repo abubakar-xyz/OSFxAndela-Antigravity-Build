@@ -74,8 +74,14 @@ export class PcmPlayer {
    */
   async resume(): Promise<void> {
     if (!this.ctx) {
-      this.ctx = new AudioContext({ sampleRate: this.sampleRate });
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      try {
+        this.ctx = new AudioCtx({ sampleRate: this.sampleRate });
+      } catch {
+        this.ctx = new AudioCtx();
+      }
       this.master = this.ctx.createGain();
+      this.master.gain.value = 1.0;
       this.analyser = this.ctx.createAnalyser();
       this.analyser.fftSize = ANALYSER_FFT;
       // Our own envelope below is what the avatar reads, so the analyser itself
@@ -88,7 +94,13 @@ export class PcmPlayer {
       this.analyser.connect(this.ctx.destination);
       this.nextStartTime = this.ctx.currentTime;
     }
-    if (this.ctx.state === 'suspended') await this.ctx.resume();
+    if (this.ctx.state === 'suspended') {
+      try {
+        await this.ctx.resume();
+      } catch {
+        /* ignore */
+      }
+    }
   }
 
   /** True once the context exists and is running. */
@@ -103,6 +115,10 @@ export class PcmPlayer {
   enqueue(pcm: Int16Array): void {
     const ctx = this.ctx;
     if (!ctx || !this.master || pcm.length === 0) return;
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
 
     const frames = new Float32Array(pcm.length);
     for (let i = 0; i < pcm.length; i++) {

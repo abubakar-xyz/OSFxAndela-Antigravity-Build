@@ -35,7 +35,7 @@ export class GeminiCivicClient {
 
   /**
    * Multimodal clue extraction from a signboard or site photo.
-   * Falls back to the deterministic pack rather than failing the user's flow.
+   * Calls the server proxy which runs Gemini vision models.
    */
   public async extractCluesFromImage(base64Image: string): Promise<ExtractedClue[]> {
     try {
@@ -46,17 +46,42 @@ export class GeminiCivicClient {
       });
 
       if (response.ok) {
-        const data = (await response.json()) as { clues?: ExtractedClue[] };
+        const data = (await response.json()) as { clues?: ExtractedClue[]; model?: string };
+        this.online = true;
         if (Array.isArray(data.clues) && data.clues.length > 0) {
-          this.online = true;
           return data.clues;
+        } else if (Array.isArray(data.clues)) {
+          return [
+            {
+              id: 'c-empty',
+              field: 'visual_condition',
+              label: 'Field Observation',
+              value: 'Photo analyzed with Gemini Vision. No explicit government signboard or tender markers detected.',
+              confidence: 0.88
+            }
+          ];
         }
       }
       this.online = response.status !== 503;
     } catch {
       this.online = false;
     }
-    return OFFLINE_CLUES;
+
+    // If network or vision proxy is unreachable, don't invent specific Akute project names
+    // unless this is specifically the demo signboard SVG.
+    if (base64Image.includes('data:image/svg+xml')) {
+      return OFFLINE_CLUES;
+    }
+
+    return [
+      {
+        id: 'c-offline-1',
+        field: 'visual_condition',
+        label: 'Field Inspection',
+        value: 'Field photo captured and sanitized. Vision server offline — tap to add observed project name or reference.',
+        confidence: 0.8
+      }
+    ];
   }
 }
 

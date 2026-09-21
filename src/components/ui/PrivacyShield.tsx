@@ -58,14 +58,14 @@ export const PrivacyShield: React.FC<PrivacyShieldProps> = ({ isMicActive = fals
 
             <div className="bottom-sheet__header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <Shield size={20} color="var(--luminous-teal-dim)" />
-                <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-semibold)' }}>
+                <Shield size={20} color="var(--luminous-teal)" />
+                <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-primary)' }}>
                   Data Sovereignty & Reporting Safety
                 </h3>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--neutral-40)', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
               >
                 <X size={20} />
               </button>
@@ -87,17 +87,17 @@ export const PrivacyShield: React.FC<PrivacyShieldProps> = ({ isMicActive = fals
                     alignItems: 'flex-start',
                     gap: 'var(--space-3)',
                     padding: 'var(--space-3)',
-                    background: 'var(--neutral-100)',
+                    background: 'var(--midnight-ink-80)',
                     borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--warm-paper-80)'
+                    border: '1px solid var(--midnight-ink-70)'
                   }}
                 >
-                  <EyeOff size={18} color="var(--luminous-teal-dim)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <EyeOff size={18} color="var(--luminous-teal)" style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <div style={{ fontWeight: 'var(--weight-bold)', color: 'var(--neutral-10)' }}>
+                    <div style={{ fontWeight: 'var(--weight-bold)', color: 'var(--text-primary)' }}>
                       EXIF & Camera Hardware Stripping
                     </div>
-                    <div style={{ color: 'var(--neutral-40)', marginTop: '2px' }}>
+                    <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
                       Photographs are sanitized locally using canvas processing before analysis. GPS coordinates and camera serial numbers are purged.
                     </div>
                   </div>
@@ -109,17 +109,17 @@ export const PrivacyShield: React.FC<PrivacyShieldProps> = ({ isMicActive = fals
                     alignItems: 'flex-start',
                     gap: 'var(--space-3)',
                     padding: 'var(--space-3)',
-                    background: 'var(--neutral-100)',
+                    background: 'var(--midnight-ink-80)',
                     borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--warm-paper-80)'
+                    border: '1px solid var(--midnight-ink-70)'
                   }}
                 >
                   <Lock size={18} color="var(--verified-green)" style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <div style={{ fontWeight: 'var(--weight-bold)', color: 'var(--neutral-10)' }}>
+                    <div style={{ fontWeight: 'var(--weight-bold)', color: 'var(--text-primary)' }}>
                       No Raw Audio Recording Retention
                     </div>
-                    <div style={{ color: 'var(--neutral-40)', marginTop: '2px' }}>
+                    <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
                       Speech is transcribed in real-time. No raw voice recordings are stored or retained on remote servers.
                     </div>
                   </div>
@@ -131,17 +131,17 @@ export const PrivacyShield: React.FC<PrivacyShieldProps> = ({ isMicActive = fals
                     alignItems: 'flex-start',
                     gap: 'var(--space-3)',
                     padding: 'var(--space-3)',
-                    background: 'var(--neutral-100)',
+                    background: 'var(--midnight-ink-80)',
                     borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--warm-paper-80)'
+                    border: '1px solid var(--midnight-ink-70)'
                   }}
                 >
                   <Database size={18} color="var(--corroborated-blue)" style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <div style={{ fontWeight: 'var(--weight-bold)', color: 'var(--neutral-10)' }}>
+                    <div style={{ fontWeight: 'var(--weight-bold)', color: 'var(--text-primary)' }}>
                       Client-Side Case Storage
                     </div>
-                    <div style={{ color: 'var(--neutral-40)', marginTop: '2px' }}>
+                    <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
                       Your cases, drafts, and evidence dossiers remain stored on your own device in private browser storage.
                     </div>
                   </div>

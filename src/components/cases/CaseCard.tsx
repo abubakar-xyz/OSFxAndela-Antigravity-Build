@@ -18,12 +18,13 @@ export const CaseCard: React.FC<CaseCardProps> = ({ civicCase, onSelect }) => {
       style={{
         cursor: 'pointer',
         transition: 'all var(--duration-fast)',
-        border: 'none',
-        borderLeft: '4px solid var(--midnight-ink-70)',
-        borderBottom: '1px solid var(--warm-paper-80)',
-        backgroundColor: 'transparent',
+        borderRadius: 'var(--radius-md)',
+        border: '1px solid var(--midnight-ink-70)',
+        borderLeft: '4px solid var(--luminous-teal)',
+        backgroundColor: 'var(--midnight-ink-80)',
         paddingLeft: 'var(--space-2)',
-        marginBottom: 'var(--space-3)'
+        marginBottom: 'var(--space-3)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
       }}
     >
       <div className="card__body" style={{ padding: 'var(--space-4)' }}>
@@ -37,7 +38,7 @@ export const CaseCard: React.FC<CaseCardProps> = ({ civicCase, onSelect }) => {
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
               fontWeight: 'var(--weight-bold)',
-              color: civicCase.status === 'submitted' ? 'var(--verified-green)' : 'var(--neutral-60)'
+              color: civicCase.status === 'submitted' ? 'var(--verified-green)' : 'var(--text-muted)'
             }}
           >
             {civicCase.status}
@@ -48,7 +49,7 @@ export const CaseCard: React.FC<CaseCardProps> = ({ civicCase, onSelect }) => {
           style={{
             fontSize: 'var(--text-sm)',
             fontWeight: 'var(--weight-semibold)',
-            color: 'var(--neutral-10)',
+            color: '#FFFFFF',
             margin: 'var(--space-2) 0 4px'
           }}
         >
@@ -58,7 +59,7 @@ export const CaseCard: React.FC<CaseCardProps> = ({ civicCase, onSelect }) => {
         <p
           style={{
             fontSize: 'var(--text-xs)',
-            color: 'var(--neutral-40)',
+            color: 'var(--text-secondary)',
             lineHeight: 'var(--leading-normal)',
             overflow: 'hidden',
             display: '-webkit-box',
@@ -76,15 +77,15 @@ export const CaseCard: React.FC<CaseCardProps> = ({ civicCase, onSelect }) => {
             alignItems: 'center',
             marginTop: 'var(--space-3)',
             paddingTop: 'var(--space-2)',
-            borderTop: '1px solid var(--warm-paper-90)',
+            borderTop: '1px solid var(--midnight-ink-70)',
             fontSize: 'var(--text-2xs)',
-            color: 'var(--neutral-60)'
+            color: 'var(--text-muted)'
           }}
         >
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-            <MapPin size={11} /> {civicCase.jurisdiction}
+            <MapPin size={11} color="var(--luminous-teal)" /> {civicCase.jurisdiction}
           </span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--luminous-teal-dim)', fontWeight: 'var(--weight-semibold)' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--luminous-teal)', fontWeight: 'var(--weight-semibold)' }}>
             Review Case <ChevronRight size={12} />
           </span>
         </div>

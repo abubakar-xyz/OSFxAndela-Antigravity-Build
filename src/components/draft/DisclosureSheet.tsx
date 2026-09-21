@@ -62,16 +62,16 @@ export const DisclosureSheet: React.FC<DisclosureSheetProps> = ({
               gap: 'var(--space-2)',
               padding: 'var(--space-3)',
               borderRadius: 'var(--radius-sm)',
-              background: 'var(--warm-paper-90)',
-              border: '1px solid var(--warm-paper-80)',
+              background: 'rgba(244, 185, 66, 0.12)',
+              border: '1px solid rgba(244, 185, 66, 0.35)',
               marginBottom: 'var(--space-4)',
               fontSize: 'var(--text-xs)',
-              color: 'var(--neutral-20)'
+              color: 'var(--text-primary)'
             }}
           >
-            <Lock size={16} color="var(--luminous-teal-dim)" style={{ flexShrink: 0, marginTop: '2px' }} />
-            <div>
-              <span style={{ fontWeight: 'var(--weight-semibold)' }}>Protection First:</span> If reporting this discrepancy poses a personal or community risk, consider submitting anonymously or through a collective Community Development Association (CDA).
+            <Lock size={16} color="var(--sun-amber)" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ lineHeight: 1.5 }}>
+              <span style={{ fontWeight: 'var(--weight-semibold)', color: 'var(--sun-amber)' }}>Protection First:</span> If reporting this discrepancy poses a personal or community risk, consider submitting anonymously or through a collective Community Development Association (CDA).
             </div>
           </div>
 
@@ -87,12 +87,12 @@ export const DisclosureSheet: React.FC<DisclosureSheetProps> = ({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                <User size={18} color="var(--neutral-40)" />
+                <User size={18} color="var(--luminous-teal)" />
                 <div>
-                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', color: 'var(--text-primary)' }}>
                     Include Personal Name
                   </div>
-                  <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--neutral-60)' }}>
+                  <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-secondary)' }}>
                     {settings.includeName ? 'Name appears on formal letter' : 'Anonymous: Signed as Concerned Community Resident'}
                   </div>
                 </div>
@@ -114,7 +114,9 @@ export const DisclosureSheet: React.FC<DisclosureSheetProps> = ({
                 style={{
                   padding: '8px 12px',
                   borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--warm-paper-80)',
+                  border: '1px solid var(--midnight-ink-60)',
+                  backgroundColor: 'var(--midnight-ink-80)',
+                  color: 'var(--text-primary)',
                   fontSize: 'var(--text-sm)',
                   marginTop: '-4px',
                   outline: 'none'
@@ -133,12 +135,12 @@ export const DisclosureSheet: React.FC<DisclosureSheetProps> = ({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                <Phone size={18} color="var(--neutral-40)" />
+                <Phone size={18} color="var(--luminous-teal)" />
                 <div>
-                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', color: 'var(--text-primary)' }}>
                     Include Phone / Email
                   </div>
-                  <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--neutral-60)' }}>
+                  <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-secondary)' }}>
                     {settings.includeContact ? 'Agency can contact you with resolution' : 'Contact withheld for privacy'}
                   </div>
                 </div>
@@ -160,7 +162,9 @@ export const DisclosureSheet: React.FC<DisclosureSheetProps> = ({
                 style={{
                   padding: '8px 12px',
                   borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--warm-paper-80)',
+                  border: '1px solid var(--midnight-ink-60)',
+                  backgroundColor: 'var(--midnight-ink-80)',
+                  color: 'var(--text-primary)',
                   fontSize: 'var(--text-sm)',
                   marginTop: '-4px',
                   outline: 'none'
@@ -179,12 +183,12 @@ export const DisclosureSheet: React.FC<DisclosureSheetProps> = ({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                <MapPin size={18} color="var(--neutral-40)" />
+                <MapPin size={18} color="var(--luminous-teal)" />
                 <div>
-                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', color: 'var(--text-primary)' }}>
                     Approximate Location Only
                   </div>
-                  <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--neutral-60)' }}>
+                  <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-secondary)' }}>
                     Shows ward & town; obscures exact personal home GPS
                   </div>
                 </div>
@@ -208,12 +212,12 @@ export const DisclosureSheet: React.FC<DisclosureSheetProps> = ({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                <EyeOff size={18} color="var(--neutral-40)" />
+                <EyeOff size={18} color="var(--luminous-teal)" />
                 <div>
-                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', color: 'var(--text-primary)' }}>
                     Strip EXIF Hardware Metadata
                   </div>
-                  <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--neutral-60)' }}>
+                  <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-secondary)' }}>
                     Purges camera serials and device footprint from photos
                   </div>
                 </div>

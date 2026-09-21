@@ -42,10 +42,10 @@ export const RecordVsReality: React.FC<RecordVsRealityProps> = ({
       {/* Header & Claim */}
       <div
         style={{
-          background: 'var(--neutral-100)',
+          background: 'var(--midnight-ink-80)',
           borderRadius: 'var(--radius-md)',
           padding: 'var(--space-4) var(--space-5)',
-          border: '1px solid var(--warm-paper-80)',
+          border: '1px solid var(--midnight-ink-70)',
           boxShadow: 'var(--shadow-sm)'
         }}
       >
@@ -53,7 +53,7 @@ export const RecordVsReality: React.FC<RecordVsRealityProps> = ({
           style={{
             fontSize: 'var(--text-xs)',
             fontWeight: 'var(--weight-bold)',
-            color: 'var(--neutral-60)',
+            color: 'var(--text-muted)',
             textTransform: 'uppercase',
             letterSpacing: 'var(--tracking-wider)'
           }}
@@ -64,7 +64,7 @@ export const RecordVsReality: React.FC<RecordVsRealityProps> = ({
           style={{
             fontSize: 'var(--text-md)',
             fontWeight: 'var(--weight-semibold)',
-            color: 'var(--neutral-10)',
+            color: '#FFFFFF',
             marginTop: '4px'
           }}
         >
@@ -77,14 +77,14 @@ export const RecordVsReality: React.FC<RecordVsRealityProps> = ({
             gap: 'var(--space-3)',
             marginTop: 'var(--space-2)',
             fontSize: 'var(--text-xs)',
-            color: 'var(--neutral-40)'
+            color: 'var(--text-secondary)'
           }}
         >
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <Building size={13} /> {civicCase.jurisdiction}
+            <Building size={13} color="var(--luminous-teal)" /> {civicCase.jurisdiction}
           </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <Calendar size={13} /> Checked: 20 Sep 2026
+            <Calendar size={13} color="var(--luminous-teal)" /> Checked: 20 Sep 2026
           </span>
         </div>
       </div>
@@ -125,7 +125,8 @@ export const RecordVsReality: React.FC<RecordVsRealityProps> = ({
       <div
         className="card"
         style={{
-          border: '1px solid var(--warm-paper-80)'
+          background: 'var(--midnight-ink-80)',
+          border: '1px solid var(--midnight-ink-70)'
         }}
       >
         <div
@@ -133,22 +134,23 @@ export const RecordVsReality: React.FC<RecordVsRealityProps> = ({
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'center',
+            borderBottom: '1px solid var(--midnight-ink-70)'
           }}
         >
-          <div style={{ fontWeight: 'var(--weight-semibold)', fontSize: 'var(--text-sm)' }}>
+          <div style={{ fontWeight: 'var(--weight-semibold)', fontSize: 'var(--text-sm)', color: '#FFFFFF' }}>
             Official Record vs. Physical Reality
           </div>
-          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-60)' }}>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
             {civicCase.dimensions.length} Dimensions Tested
           </div>
         </div>
 
         <div className="card__body" style={{ padding: 'var(--space-4)' }}>
           {civicCase.dimensions.map((dim) => (
-            <div key={dim.id} className="comparison-row">
+            <div key={dim.id} className="comparison-row" style={{ borderBottom: '1px solid var(--midnight-ink-70)' }}>
               <div className="comparison-row__dimension">
-                <span>{dim.dimension}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{dim.dimension}</span>
                 <span className={`evidence-chip evidence-chip--${dim.state.toLowerCase()}`}>
                   {dim.state}
                 </span>
@@ -163,8 +165,8 @@ export const RecordVsReality: React.FC<RecordVsRealityProps> = ({
                 <div
                   className="comparison-box"
                   style={{
-                    backgroundColor: dim.state === 'CONFLICTING' ? 'rgba(236, 112, 103, 0.08)' : 'var(--warm-paper-95)',
-                    borderColor: dim.state === 'CONFLICTING' ? 'rgba(236, 112, 103, 0.25)' : 'var(--warm-paper-80)'
+                    backgroundColor: dim.state === 'CONFLICTING' ? 'rgba(236, 112, 103, 0.12)' : 'var(--midnight-ink-90)',
+                    borderColor: dim.state === 'CONFLICTING' ? 'rgba(236, 112, 103, 0.35)' : 'var(--midnight-ink-70)'
                   }}
                 >
                   <div className="comparison-box__label">Observed Field Reality</div>
@@ -182,14 +184,14 @@ export const RecordVsReality: React.FC<RecordVsRealityProps> = ({
           style={{
             padding: 'var(--space-3) var(--space-4)',
             borderRadius: 'var(--radius-md)',
-            background: 'var(--warm-paper-90)',
-            border: '1px solid var(--warm-paper-80)',
+            background: 'var(--midnight-ink-80)',
+            border: '1px solid var(--midnight-ink-70)',
             fontSize: 'var(--text-xs)',
-            color: 'var(--neutral-20)',
+            color: 'var(--text-secondary)',
             lineHeight: 'var(--leading-relaxed)'
           }}
         >
-          <span style={{ fontWeight: 'var(--weight-bold)', color: 'var(--neutral-10)' }}>
+          <span style={{ fontWeight: 'var(--weight-bold)', color: '#FFFFFF' }}>
             Adversarial Audit:
           </span>{' '}
           {civicCase.adversarialNotes}
@@ -197,8 +199,8 @@ export const RecordVsReality: React.FC<RecordVsRealityProps> = ({
       )}
 
       {/* Sources Registry Block */}
-      <div className="card">
-        <div className="card__header" style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)' }}>
+      <div className="card" style={{ background: 'var(--midnight-ink-80)', border: '1px solid var(--midnight-ink-70)' }}>
+        <div className="card__header" style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: '#FFFFFF', borderBottom: '1px solid var(--midnight-ink-70)' }}>
           Traceable Sources & Grounded Provenance
         </div>
         <div className="card__body" style={{ padding: 'var(--space-4)' }}>
@@ -208,7 +210,7 @@ export const RecordVsReality: React.FC<RecordVsRealityProps> = ({
               <div className="source-citation__body">
                 <div className="source-citation__name">{src.name}</div>
                 {src.excerpt && (
-                  <div style={{ color: 'var(--neutral-20)', marginTop: '2px', fontStyle: 'italic' }}>
+                  <div style={{ color: 'var(--text-secondary)', marginTop: '2px', fontStyle: 'italic' }}>
                     "{src.excerpt}"
                   </div>
                 )}
@@ -224,7 +226,7 @@ export const RecordVsReality: React.FC<RecordVsRealityProps> = ({
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '3px',
-                      color: 'var(--luminous-teal-dim)',
+                      color: 'var(--luminous-teal)',
                       textDecoration: 'none',
                       marginTop: '4px',
                       fontSize: 'var(--text-2xs)'
@@ -251,7 +253,7 @@ export const RecordVsReality: React.FC<RecordVsRealityProps> = ({
         <button
           onClick={onCheckAgain}
           disabled={isCheckingAgain}
-          className="btn btn--outline-dark"
+          className="btn btn--secondary"
           style={{ width: '100%' }}
         >
           <RefreshCw size={16} className={isCheckingAgain ? 'spin' : ''} />

@@ -304,7 +304,10 @@ export class LiveBridge {
     let setupSeen = false;
     let failure = null;
     let session = null;
-    let notify = () => {};
+    let resolveSettled;
+    const settledPromise = new Promise((resolve) => {
+      resolveSettled = resolve;
+    });
 
     // The holder is what actually survives a dropped connection: it owns the
     // Gemini session and points at whichever bridge is currently listening.
@@ -312,18 +315,19 @@ export class LiveBridge {
     // is parked waiting for a browser to come back — frames are held here
     // rather than thrown away.
     const holder = { session: null, sink: null, backlog: [], model };
-    const settledOrChanged = () => new Promise((r) => { notify = r; });
 
     const mark = (err) => {
       if (err && !failure) failure = err;
-      notify();
+      resolveSettled?.();
     };
 
+    this.log(`connecting to Gemini Live model ${model.id}...`);
     session = await this.ai.live.connect({
       model: model.id,
       config,
       callbacks: {
         onmessage: (m) => {
+          this.log(`gemini message received: setupComplete=${Boolean(m.setupComplete)} modelTurn=${Boolean(m.serverContent?.modelTurn)}`);
           if (m.setupComplete && !setupSeen) {
             setupSeen = true;
             mark(null);
@@ -336,26 +340,31 @@ export class LiveBridge {
           else if (holder.backlog.length < 400) holder.backlog.push(m);
         },
         onerror: (e) => {
+          this.log(`gemini error: ${e?.message}`);
           const err = new Error(e?.message || 'live socket error');
           if (!setupSeen) return mark(err);
           holder.sink?._onGeminiDown(err.message);
         },
         onclose: (e) => {
+          this.log(`gemini close: code=${e?.code} reason=${e?.reason}`);
           const reason = e?.reason || '';
           if (!setupSeen) return mark(new Error(reason || 'closed before setup'));
           holder.sink?._onGeminiDown(reason);
         }
       }
     });
+    this.log(`ai.live.connect resolved for ${model.id}, setupSeen=${setupSeen}`);
 
     if (!setupSeen && !failure) {
-      const timeout = new Promise((r) =>
-        setTimeout(() => {
+      let timer;
+      const timeout = new Promise((r) => {
+        timer = setTimeout(() => {
           if (!setupSeen && !failure) failure = new Error(`setup timed out after ${START_TIMEOUT_MS}ms`);
           r();
-        }, START_TIMEOUT_MS).unref?.()
-      );
-      await Promise.race([settledOrChanged(), timeout]);
+        }, START_TIMEOUT_MS);
+      });
+      await Promise.race([settledPromise, timeout]);
+      clearTimeout(timer);
     }
 
     if (failure || !setupSeen) {

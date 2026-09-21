@@ -1,0 +1,11 @@
+{
+  "name": "WAZI Civic",
+  "description": "A multilingual, avatar-led civic companion for African communities: Understand public commitments, compare official claims against lived evidence, and prepare verified actionable civic artifacts.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

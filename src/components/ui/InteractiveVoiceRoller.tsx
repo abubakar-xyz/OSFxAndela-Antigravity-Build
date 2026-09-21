@@ -89,14 +89,14 @@ export const InteractiveVoiceRoller: React.FC<InteractiveVoiceRollerProps> = ({
       gap: 'var(--space-3)'
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 var(--space-2)' }}>
-        <span style={{ fontSize: '13px', color: 'var(--stone-gray)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '13px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Collaborator Voice
         </span>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={handlePrev} disabled={currentIndex === 0} style={{ background: 'var(--midnight-ink-50)', border: 'none', color: currentIndex === 0 ? 'var(--stone-gray)' : 'var(--warm-paper)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: currentIndex === 0 ? 'default' : 'pointer' }}>
+          <button onClick={handlePrev} disabled={currentIndex === 0} style={{ background: 'var(--midnight-ink-80)', border: '1px solid var(--midnight-ink-60)', color: currentIndex === 0 ? 'var(--text-muted)' : 'var(--text-primary)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: currentIndex === 0 ? 'default' : 'pointer' }}>
             <ChevronLeft size={16} />
           </button>
-          <button onClick={handleNext} disabled={currentIndex === PERSONAS.length - 1} style={{ background: 'var(--midnight-ink-50)', border: 'none', color: currentIndex === PERSONAS.length - 1 ? 'var(--stone-gray)' : 'var(--warm-paper)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: currentIndex === PERSONAS.length - 1 ? 'default' : 'pointer' }}>
+          <button onClick={handleNext} disabled={currentIndex === PERSONAS.length - 1} style={{ background: 'var(--midnight-ink-80)', border: '1px solid var(--midnight-ink-60)', color: currentIndex === PERSONAS.length - 1 ? 'var(--text-muted)' : 'var(--text-primary)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: currentIndex === PERSONAS.length - 1 ? 'default' : 'pointer' }}>
             <ChevronRight size={16} />
           </button>
         </div>
@@ -127,8 +127,8 @@ export const InteractiveVoiceRoller: React.FC<InteractiveVoiceRollerProps> = ({
             }}
           >
             <div style={{
-              background: 'var(--midnight-ink-50)',
-              border: `1px solid ${persona.id === currentVoiceId ? 'var(--luminous-teal)' : 'var(--midnight-ink)'}`,
+              background: 'var(--midnight-ink-80)',
+              border: `1px solid ${persona.id === currentVoiceId ? 'var(--luminous-teal)' : 'var(--midnight-ink-70)'}`,
               borderRadius: '16px',
               padding: 'var(--space-4)',
               display: 'flex',
@@ -137,7 +137,7 @@ export const InteractiveVoiceRoller: React.FC<InteractiveVoiceRollerProps> = ({
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '18px', color: 'var(--warm-paper)' }}>{persona.name}</h3>
+                  <h3 style={{ margin: 0, fontSize: '18px', color: 'var(--text-primary)' }}>{persona.name}</h3>
                   <span style={{ fontSize: '13px', color: 'var(--luminous-teal)' }}>{persona.specialty}</span>
                 </div>
                 <button 
@@ -146,15 +146,15 @@ export const InteractiveVoiceRoller: React.FC<InteractiveVoiceRollerProps> = ({
                     sounds.playReady(); 
                   }}
                   style={{
-                    background: 'var(--midnight-ink)',
-                    border: '1px solid var(--stone-gray)',
+                    background: 'var(--midnight-ink-90)',
+                    border: '1px solid var(--midnight-ink-60)',
                     borderRadius: '50%',
                     width: '32px',
                     height: '32px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'var(--warm-paper)',
+                    color: 'var(--text-primary)',
                     cursor: 'pointer'
                   }}
                   title="Play sample"
@@ -162,7 +162,7 @@ export const InteractiveVoiceRoller: React.FC<InteractiveVoiceRollerProps> = ({
                   <Play size={14} fill="currentColor" />
                 </button>
               </div>
-              <p style={{ margin: 0, fontSize: '14px', color: 'var(--stone-gray)', lineHeight: 1.4 }}>
+              <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                 {persona.description}
               </p>
               
@@ -173,8 +173,8 @@ export const InteractiveVoiceRoller: React.FC<InteractiveVoiceRollerProps> = ({
                   width: '100%',
                   padding: '10px',
                   background: persona.id === currentVoiceId ? 'var(--luminous-teal-20)' : 'transparent',
-                  border: `1px solid ${persona.id === currentVoiceId ? 'var(--luminous-teal)' : 'var(--stone-gray)'}`,
-                  color: persona.id === currentVoiceId ? 'var(--luminous-teal)' : 'var(--warm-paper)',
+                  border: `1px solid ${persona.id === currentVoiceId ? 'var(--luminous-teal)' : 'var(--midnight-ink-60)'}`,
+                  color: persona.id === currentVoiceId ? 'var(--luminous-teal)' : 'var(--text-primary)',
                   borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
@@ -205,7 +205,7 @@ export const InteractiveVoiceRoller: React.FC<InteractiveVoiceRollerProps> = ({
               width: '6px',
               height: '6px',
               borderRadius: '50%',
-              background: i === currentIndex ? 'var(--warm-paper)' : 'var(--midnight-ink)',
+              background: i === currentIndex ? 'var(--luminous-teal)' : 'var(--midnight-ink-60)',
               transition: 'background 0.2s ease'
             }}
           />

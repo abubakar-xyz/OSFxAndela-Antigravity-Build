@@ -36,6 +36,25 @@ the officer who has to answer it.
 
 ## What it actually does
 
+### Most of the time, it just explains things
+
+The everyday use is not a scandal. It is someone who wants to understand something and
+has nobody to ask.
+
+> **"Abeg, wetin be dis FOI ting I dey hear people talk about?"**
+>
+> *"Ah, FOI! Omo, na like your power to ask government question about wetin dem dey do
+> with your money, and dem must answer you. You get anything specific you want know
+> about am?"*
+
+That exchange is real, captured from a live session. WAZI **teaches first** — what a
+right is, how a process works, what a word on a form means, who is responsible, how long
+they have to reply. She answers in the dialect she was asked in, and she does not open
+an investigation just because someone asked a question. Most civic tools skip this
+entirely and start at the dashboard.
+
+### When there is something specific, it investigates
+
 ```
   she speaks  ──►  WAZI answers in the same language, accent and register
                    (no menu, no language setting, no tapping a flag)
@@ -58,43 +77,128 @@ the officer who has to answer it.
   she decides what to send.  Nothing leaves the device without her saying so.
 ```
 
-The evidence board and the draft studio are **opened by the conversation itself** — WAZI calls
-them as tools when what she said warrants it, in any language. There is no "now press the
-button" step, and no English keyword matching standing between a Pidgin speaker and the rest of
-the app.
+The evidence board and the draft studio are **opened by the conversation itself** — WAZI
+calls them as tools when what she said warrants it, in any language. There is no "now
+press the button" step, and no English keyword matching standing between a Pidgin
+speaker and the rest of the app.
 
----
+### See it
 
-## Run it
+A recorded walkthrough lives at `.cache/demo/` after running `npm run demo` — or watch
+the submitted demo video. Every frame is the real app against a real Gemini Live
+session; the captions on screen are genuine transcripts of what WAZI said.
+
+## Getting it running
+
+Three steps, about two minutes. WAZI runs as **one process on one port** — the
+interface, the API routes and the live voice socket are served together, so there is no
+second terminal to forget and no proxy to configure.
+
+### 1. Install
 
 ```bash
 git clone https://github.com/abubakar-xyz/OSFxAndela-Antigravity-Build
 cd OSFxAndela-Antigravity-Build
 npm install
-
-cp .env.example .env      # then set GEMINI_API_KEY=...
-
-npm run dev               # → http://localhost:8080
 ```
 
-**One command. One port. One process.** The UI, the `/api` routes and the `/live` voice socket
-are served together, so there is no second terminal to forget and no proxy to configure. It also
-means the browser derives the WebSocket URL from the page it was served from — open
-`http://<your-laptop-ip>:8080` on a phone on the same Wi-Fi and the voice works there too.
+*Node 20+. Nothing else to install — no database, no Docker, no build step to run first.*
+
+### 2. Add a Gemini API key
 
 ```bash
-npm start                 # production: build first with `npm run build`
+cp .env.example .env
 ```
 
-> **`GEMINI_API_KEY`, not `VITE_GEMINI_API_KEY`.** Vite inlines every `VITE_`-prefixed variable
-> into the shipped browser bundle. For an app whose users are reporting on powerful
-> institutions, a leaked key is not just a billing problem — it is an account someone else can
-> speak through. The key belongs to the node process only.
+Open `.env` and set one line:
 
-**Without a key**, everything except the voice still works: the evidence board, the
-record-versus-reality comparison, the adversarial re-check, the draft studio and the dispatch
-routes all run on the offline country pack. The voice session says plainly that it cannot
-connect rather than quietly substituting something worse.
+```bash
+GEMINI_API_KEY=your-key-here
+```
+
+> **Use `GEMINI_API_KEY`, not `VITE_GEMINI_API_KEY`.** Vite inlines every
+> `VITE_`-prefixed variable into the shipped browser bundle. For an app whose users are
+> reporting on powerful institutions, a leaked key is not a billing problem — it is an
+> account someone else can speak through. This key stays in the Node process and never
+> reaches a browser.
+
+*Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey). The free
+tier is enough to try it; sustained use needs a paid key, and WAZI will tell you plainly
+when the quota is reached rather than failing silently.*
+
+### 3. Run
+
+```bash
+npm run dev
+```
+
+Open **http://localhost:8080** and press **Talk**. WAZI greets you first — then speak to
+her in any language you like and she will answer in it.
+
+<details>
+<summary><b>Want it on your phone?</b> It already works.</summary>
+
+<br>
+
+Because everything is served from one origin, the browser derives the voice socket from
+the page it was loaded from. Find your machine's LAN address and open it on a phone on
+the same Wi-Fi:
+
+```bash
+npm run dev
+# then on the phone:  http://<your-laptop-ip>:8080
+```
+
+This is the device WAZI is actually designed for — a small, cheap Android screen on
+mobile data. Every view is verified at 360 px wide.
+
+</details>
+
+<details>
+<summary><b>No API key?</b> Most of it still works.</summary>
+
+<br>
+
+Everything except the voice runs on the offline country pack: the evidence board, the
+record-versus-reality comparison, the adversarial re-check, the draft studio and the
+dispatch routes. The voice session says plainly that it cannot connect rather than
+quietly substituting something worse — there is deliberately no text-to-speech fallback,
+because a browser's default voice cannot match a speaker's accent, which is the whole
+point of the product.
+
+</details>
+
+<details>
+<summary><b>Production run</b></summary>
+
+<br>
+
+```bash
+npm run build
+npm start          # serves the built UI and the voice socket from :8080
+```
+
+Useful environment variables, all optional:
+
+| Variable | Default | What it does |
+|---|---|---|
+| `PORT` | `8080` | Port for everything |
+| `GEMINI_LIVE_MODEL` | *(chain)* | Pins a Live model to the front of the fallback chain |
+| `WAZI_JURISDICTION` | `Nigeria` | Which country pack loads |
+| `WAZI_LOG` | *(verbose)* | Set to `quiet` to silence per-session logging |
+
+</details>
+
+### Try these first
+
+Press Talk, then say — or type — any of these:
+
+| Say this | What it shows |
+|---|---|
+| *"Abeg, wetin be dis FOI ting I dey hear people talk about?"* | WAZI teaches, in the dialect you asked in. The language pill switches itself. |
+| *"How long dem get to reply person wey write dem?"* | She cites the seven-working-day clock from the FOI Act — from verified data, not invention. |
+| *"The health centre for my area — dem say e don complete, but e no get roof."* | The evidence board opens **on its own.** Nobody pressed a button. |
+| *Switch language mid-sentence* | She switches with you and never mentions it. |
 
 ---
 
@@ -115,6 +219,10 @@ npm run verify:browser    # the audio stack inside the browser
 | **`verify:live`** | Synthesises a Nigerian-Pidgin utterance, streams it as real 16 kHz PCM over the socket, and asserts the transcription that comes back, the 24 kHz audio going out, **that the reply is in the dialect that was spoken**, that the model reports the language it detected, that it drives the interface, and that a dropped connection resumes the same conversation instead of restarting it. |
 | **`verify:journey`** | Drives a 360 px phone screen through signboard → clues → evidence board → re-check → FOI draft → dispatch, asserting the statutory citation, the named authority, the escalation route, and that no view scrolls sideways. Needs **no API key**. |
 | **`verify:browser`** | Asserts the 16 kHz capture context, the 24 kHz playback context, that audio is actually scheduled, and that the avatar's mouth is driven by an analyser on the live playback graph. |
+
+```bash
+npm run demo              # records the walkthrough as video + a still per beat
+```
 
 Every one of these found real defects rather than confirming a happy path — see
 [`AI_CODING_LOG.md`](AI_CODING_LOG.md).

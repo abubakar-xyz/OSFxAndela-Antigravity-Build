@@ -19,6 +19,11 @@ html, body {
   width: 100%;
   height: 100%;
   min-height: 100dvh;
+  /* A civic tool has to work on a small, cheap phone. Nothing in this app is
+     allowed to push the page sideways; scrollable rows scroll within
+     themselves. */
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
   margin: 0;
   padding: 0;
   background-color: var(--warm-paper-95);

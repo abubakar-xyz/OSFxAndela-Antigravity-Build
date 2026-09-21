@@ -10,6 +10,14 @@
   --midnight-ink-80:     #132D3C;    /* Cards, overlays in dark context */
   --midnight-ink-70:     #1E3A4A;    /* Subtle borders, dividers */
   --midnight-ink-60:     #2B4C5F;    /* Muted elements in dark mode */
+  --midnight-ink-50:     #3A5F73;    /* Raised controls on a dark surface */
+
+  /* Semantic aliases used by the dark overlays (modals, sheets, banners).
+     These were referenced by components before they existed, which meant the
+     browser discarded those declarations: sheets rendered with no background
+     and secondary text inherited whatever was behind it. */
+  --obsidian:            #051219;    /* Deepest surface — bottom sheets, modals */
+  --stone-gray:          #8FA3AD;    /* Secondary text on a dark surface */
 
   /* Warm grounds (Evidence & Draft workspaces) */
   --warm-paper:          #F7F3E8;    /* Light mode background, document bg */
@@ -23,6 +31,7 @@
   --luminous-teal-light: #4DD8C8;    /* Hover states, glow effects */
   --luminous-teal-dim:   #0E8A7D;    /* Pressed states */
   --luminous-teal-glow:  rgba(22, 198, 177, 0.18); /* Ambient glow */
+  --luminous-teal-20:    rgba(22, 198, 177, 0.20); /* Selected state fill */
 
   --sun-amber:           #F4B942;    /* Warmth, attention, notifications */
   --sun-amber-light:     #F7CC6E;    /* Gentle highlights */

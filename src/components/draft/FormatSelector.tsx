@@ -27,7 +27,14 @@ export const FormatSelector: React.FC<FormatSelectorProps> = ({
         gap: 'var(--space-2)',
         overflowX: 'auto',
         paddingBottom: 'var(--space-2)',
-        scrollbarWidth: 'none'
+        scrollbarWidth: 'none',
+        // A flex item defaults to `min-width: auto`, which refuses to shrink
+        // below its content. Without these the row grows past the viewport and
+        // pushes the whole page sideways on a narrow phone instead of
+        // scrolling within itself.
+        minWidth: 0,
+        maxWidth: '100%',
+        WebkitOverflowScrolling: 'touch'
       }}
     >
       {formats.map((fmt) => {
@@ -39,6 +46,7 @@ export const FormatSelector: React.FC<FormatSelectorProps> = ({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
+              flexShrink: 0,
               gap: '6px',
               padding: '6px 14px',
               borderRadius: '0',

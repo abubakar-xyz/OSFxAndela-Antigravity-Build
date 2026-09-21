@@ -1,148 +1,302 @@
-# WAZI Civic — Information You Can Trust 🏛️✨
+<div align="center">
 
-> **Talk to WAZI, show what is happening, discover what the public record says, and turn the evidence into the right message for the right institution.**
+# WAZI
 
-Built for the **Andela x Open Society Foundations (OSF) 2026 Civic-Tech Hackathon**.
+### Talk to it in your own language. It checks what the record says. It writes the letter.
 
----
+**A voice-first civic companion for people who were never meant to read the paperwork.**
 
-## 🎯 Challenge Tracks Addressed
+*WAZI is Swahili for "open" — as in open, clear, out in the daylight.*
 
-### Primary Track: Transparency & Accountability
-- **Grounded Civic Explanations**: Explains public infrastructure allocations, tenders, procurement terms, and citizen rights in accessible, plain language.
-- **Record vs. Reality Verification Board**: Compares official claims (e.g. 100% completion & payout) directly against dated, verifiable community observations and signboard evidence.
-- **Grounded Provenance**: Strict claim-level evidence states (`VERIFIED`, `CORROBORATED`, `REPORTED`, `CONFLICTING`, `UNKNOWN`) with publication and retrieval dates.
-- **Adversarial Re-verification ("Check Again")**: Rigorous secondary audit checking for subsequent phase tenders, boundary relocations, or contractor debarment.
-- **Institutional Redress**: Matches issues to the responsible public body and verified public desk.
+Built for the **OSF × Andela 2026 hackathon**, *Information you can trust*.
+Cross-track: **Transparency & Accountability** (primary) · **Safety, Reporting & Protection** (secondary)
 
-### Secondary Track: Safety, Reporting & Protection
-- **Client-Side EXIF Stripping**: Purges camera serials, device fingerprints, and GPS coordinates before any image processing.
-- **Active Disclosure Review**: Granular user toggles for anonymity, contact disclosure, approximate location, and redaction before saving or exporting.
-- **Protection First**: Non-emergency guidance with escalation routes to institutional oversight bodies (e.g. ICPC project tracking group).
+</div>
 
 ---
 
-## 🌟 The Core User Journey
+## The problem, in one scene
+
+A woman walks past the health centre her ward has been waiting three years for. The signboard
+says **COMPLETED AND COMMISSIONED**. The building has no roof.
+
+Everything she would need to do something about that exists in public. The contract is on the
+procurement portal. The payment is on the treasury portal. The law giving her the right to ask
+is the Freedom of Information Act 2011, and it gives the agency seven working days to answer.
+
+None of it is reachable from where she is standing. It is in English, in PDFs, behind acronyms,
+addressed to an "Accounting Officer" nobody has named for her. So the roof stays off.
+
+**WAZI is the distance between those two facts.** She talks to it. In Pidgin, in Swahili, in
+Yoruba, in whatever she actually speaks. It listens, checks the record against what she is
+looking at, shows her the contradiction, and hands her a legally-grounded letter addressed to
+the officer who has to answer it.
+
+---
+
+## What it actually does
 
 ```
-  [ Home Companion ]
-   WAZI speaks & listens
-        │
-        ▼
-  [ Show WAZI ]
-   Camera / Signboard Intake ──► EXIF Stripped & Clues Extracted
-        │
-        ▼
-  [ Evidence Workspace ]
-   Query NOCOPO & Open Treasury ──► Record vs Reality Board (CONFLICTING)
-        │
-        ▼
-  [ Check Again ]
-   Adversarial Challenge Pass ──► Confirms Finding Holds
-        │
-        ▼
-  [ Draft Studio ]
-   FOI Request / Incident Complaint / WhatsApp Brief ──► Disclosure Review
-        │
-        ▼
-  [ Action & Persistence ]
-   PDF Export / Verified Email Handoff ──► Saved in Offline Case Workspace
+  she speaks  ──►  WAZI answers in the same language, accent and register
+                   (no menu, no language setting, no tapping a flag)
+       │
+       ▼
+  she shows it the signboard  ──►  EXIF stripped on her phone before anything leaves it
+       │                           structured clues extracted from the image
+       ▼
+  the evidence board opens  ──►  official record beside physical reality, claim by claim
+       │                          every claim carries a state and a dated source
+       ▼
+  "check again"  ──►  an adversarial second pass that tries to break its own finding
+       │
+       ▼
+  the draft studio  ──►  an FOI request citing Section 4 of the FOI Act, addressed to the
+                          named officer, with the 7-working-day clock and the escalation
+                          route to ICPC if it lapses
+       │
+       ▼
+  she decides what to send.  Nothing leaves the device without her saying so.
 ```
+
+The evidence board and the draft studio are **opened by the conversation itself** — WAZI calls
+them as tools when what she said warrants it, in any language. There is no "now press the
+button" step, and no English keyword matching standing between a Pidgin speaker and the rest of
+the app.
 
 ---
 
-## 🏗️ Architecture & Technology Stack
-
-- **Frontend**: React 19, TypeScript, Vite
-- **Styling**: Vanilla CSS Design Tokens, warm paper / midnight ink palette, WCAG AA contrast
-- **AI & Multimodal**:
-  - **Gemini 3.8 Flash** with Google Search Grounding for structured evidence verification
-  - **Deterministic Civic Engine** for 100% offline, zero-latency reliability
-- **Audio & Speech**:
-  - Web Audio API crystal harmonic chimes (100% offline synthetic audio)
-  - Web Speech API (SpeechRecognition + SpeechSynthesis) with graceful text fallbacks
-- **Data Sovereignty**:
-  - HTML5 Canvas EXIF & hardware metadata stripping
-  - Private client-side persistence (`localStorage` / `IndexedDB`)
-
----
-
-## 📂 Project Structure
-
-```
-├── public/
-│   ├── favicon.svg             # WAZI avatar icon
-│   └── manifest.json           # PWA standalone manifest
-├── src/
-│   ├── components/
-│   │   ├── wazi/               # WaziCharacter (SVG 2D) & WaziCompanion
-│   │   ├── conversation/       # Transcript, TalkButton, TextInput, VoiceRings
-│   │   ├── workspace/          # EvidenceWorkspace, RecordVsReality, SearchProgress, CameraModal
-│   │   ├── draft/              # DraftStudio, FormatSelector, ToneControl, DisclosureSheet
-│   │   ├── cases/              # CaseList, CaseCard
-│   │   └── ui/                 # ActionDock, PrivacyShield, LanguagePill, SettingsModal
-│   ├── styles/
-│   │   ├── design-tokens.css   # Color palette, spacing, typography tokens
-│   │   ├── typography.css      # Inter, DM Serif Display, JetBrains Mono
-│   │   ├── animations.css      # WAZI breathing, glow pulses, waveforms
-│   │   └── components.css      # Responsive cards, buttons, badges
-│   ├── lib/
-│   │   ├── types.ts            # Core TypeScript schemas
-│   │   ├── demo-fixtures.ts    # Hand-verified Akute PHC flagship case
-│   │   ├── evidence-engine.ts  # Verification & drafting logic
-│   │   ├── gemini-client.ts    # Gemini multimodal client
-│   │   ├── audio-speech.ts     # Web Audio synthetic chimes & speech
-│   │   ├── privacy.ts          # EXIF stripping & disclosure filters
-│   │   └── storage.ts          # Case persistence & settings
-│   ├── data/jurisdictions/ng/  # Nigeria Country Pack (NOCOPO, Treasury, NPHCDA)
-│   ├── prompts/                # Prompt guidelines & state prompts
-│   ├── App.tsx                 # Master state machine controller
-│   └── index.css               # Design system cascade entry
-```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+ (Tested on Node v24 LTS)
-- npm / pnpm
-
-### Installation
+## Run it
 
 ```bash
-# Clone the repository
-git clone <repo-url>
-cd "OSFxAndela Antigravity Build"
-
-# Install dependencies
+git clone https://github.com/abubakar-xyz/OSFxAndela-Antigravity-Build
+cd OSFxAndela-Antigravity-Build
 npm install
 
-# (Optional) Add your Gemini API key in .env
-cp .env.example .env
+cp .env.example .env      # then set GEMINI_API_KEY=...
 
-# Run development server
-npm run dev
+npm run dev               # → http://localhost:8080
 ```
 
-The application will be live at `http://localhost:5173/`.
+**One command. One port. One process.** The UI, the `/api` routes and the `/live` voice socket
+are served together, so there is no second terminal to forget and no proxy to configure. It also
+means the browser derives the WebSocket URL from the page it was served from — open
+`http://<your-laptop-ip>:8080` on a phone on the same Wi-Fi and the voice works there too.
+
+```bash
+npm start                 # production: build first with `npm run build`
+```
+
+> **`GEMINI_API_KEY`, not `VITE_GEMINI_API_KEY`.** Vite inlines every `VITE_`-prefixed variable
+> into the shipped browser bundle. For an app whose users are reporting on powerful
+> institutions, a leaked key is not just a billing problem — it is an account someone else can
+> speak through. The key belongs to the node process only.
+
+**Without a key**, everything except the voice still works: the evidence board, the
+record-versus-reality comparison, the adversarial re-check, the draft studio and the dispatch
+routes all run on the offline country pack. The voice session says plainly that it cannot
+connect rather than quietly substituting something worse.
 
 ---
 
-## 🧪 Verified Flagship Scenario: Akute Model PHC
+## Prove it works
 
-The demo features a real, hand-verified civic case:
-- **Project**: Turnkey Rehabilitation & Equipping of Akute Model Primary Health Care Centre
-- **Reference**: Contract Ref: `NPHCDA/2023/LOT-14`
-- **Agency**: National Primary Health Care Development Agency (NPHCDA)
-- **Disbursement Record**: ₦38,250,000 paid via Voucher `OTP-20240228-44102` (certified 100% completed)
-- **Field Evidence**: Dated inspection photograph documenting an unroofed masonry shell with zero medical equipment
-- **Finding**: `CONFLICTING`
-- **Adversarial Check**: Verifies no subsequent Phase 2 variation exists and plot cadastral coordinates match
-- **Civic Deliverable**: Freedom of Information request citing Section 2(3) of FOI Act 2011 with verified delivery to NPHCDA and ICPC escalation routing.
+Three harnesses, all driving the real thing. None of them mock the API.
+
+```bash
+npm run dev               # in one terminal
+
+npm run verify:live       # the voice pipeline, over the real wire protocol
+npm run verify:journey    # the whole judged journey, in a real browser at 360px
+npm run verify:browser    # the audio stack inside the browser
+```
+
+| | what it proves |
+|---|---|
+| **`verify:live`** | Synthesises a Nigerian-Pidgin utterance, streams it as real 16 kHz PCM over the socket, and asserts the transcription that comes back, the 24 kHz audio going out, **that the reply is in the dialect that was spoken**, that the model reports the language it detected, that it drives the interface, and that a dropped connection resumes the same conversation instead of restarting it. |
+| **`verify:journey`** | Drives a 360 px phone screen through signboard → clues → evidence board → re-check → FOI draft → dispatch, asserting the statutory citation, the named authority, the escalation route, and that no view scrolls sideways. Needs **no API key**. |
+| **`verify:browser`** | Asserts the 16 kHz capture context, the 24 kHz playback context, that audio is actually scheduled, and that the avatar's mouth is driven by an analyser on the live playback graph. |
+
+Every one of these found real defects rather than confirming a happy path — see
+[`AI_CODING_LOG.md`](AI_CODING_LOG.md).
 
 ---
 
-## 🛡️ License
+## How the voice works
 
-Built for Open Society Foundations & Andela Hackathon 2026. Distributed under the Apache 2.0 / MIT License.
+```
+  microphone
+      │  AudioWorklet in an AudioContext opened at 16 kHz
+      │  20 ms frames, Float32 → PCM16, transferred not copied
+      ▼
+  WebSocket /live      binary frames = raw PCM16LE mono
+      │                text frames  = JSON control messages
+      ▼
+  node (server.js)     holds the API key · one Gemini session per socket
+      │  ai.live.connect() → BidiGenerateContent
+      ▼
+  Gemini Live          system instruction injected at `setup`:
+      │                  core identity + language mirroring + persona + tools
+      │  24 kHz PCM · transcripts both ways · tool calls
+      ▼
+  PcmPlayer @ 24 kHz   gapless scheduled queue
+      ├─► speakers
+      └─► AnalyserNode → rAF → RMS + vocal formant energy → the avatar's mouth
+```
+
+**Three things worth knowing:**
+
+**1. The language control is a readout, not a setting.** Every session opens with an
+unconditional instruction to mirror the speaker's language, dialect, register and accent —
+including switches mid-sentence. When WAZI is confident, she calls `note_detected_language` and
+the pill in the header follows her. Verified: a Pidgin utterance produces a Pidgin reply and
+`pcm-NG` on the pill, with nothing tapped.
+
+**2. The mouth is driven by audio leaving the speakers,** not by chunks arriving off the socket.
+An arriving chunk is queued behind everything before it, so measuring it on arrival desyncs the
+avatar by the whole queue depth. The level combines broadband amplitude with energy in the vocal
+formant band (150 Hz–3.8 kHz), because a fricative carries energy but barely moves a jaw while a
+vowel at the same amplitude opens it wide.
+
+**3. Conversations survive a dropped connection.** When a socket closes without a goodbye, the
+Gemini session is parked for 20 seconds under a per-tab key. A browser that comes back inside
+that window reclaims it with full context. People on mobile data lose signal in lifts and
+tunnels; without this, every one of those moments makes them start their case over.
+
+### Model selection
+
+Measured against the live API, not taken from documentation. The Live API rejects an entire
+`setup` frame containing one unsupported field, so capabilities are gated per model:
+
+| Model | First audio | Tools | Affective dialog |
+|---|---|---|---|
+| `gemini-3.1-flash-live-preview` *(default)* | ~1.9 s | ✅ | ❌ rejected |
+| `gemini-2.5-flash-native-audio-latest` | ~7.5 s | ✅ | ✅ |
+| `gemini-3.8-live` | — | ❌ times out | ❌ rejected |
+
+Measured on a 5.1 s Nigerian-Pidgin utterance. The chain falls through on failure.
+`GEMINI_LIVE_MODEL` moves a model to the front rather than replacing the chain, so a bad pin
+degrades instead of breaking voice.
+
+---
+
+## How it decides what is true
+
+This is a tool for accusing institutions of not doing what they were paid to do. It has to be
+careful, and it has to be honest about its own limits.
+
+**Claims carry states, not confidence scores.** `VERIFIED` · `CORROBORATED` · `REPORTED` ·
+`CONFLICTING` · `UNKNOWN`. A percentage implies a precision nobody has, and it invites a
+non-technical reader to round 87 % up to "true".
+
+**The record and the reality are never merged.** They sit in two columns. WAZI never says the
+contractor stole anything; it says the record claims one thing, the photograph shows another,
+and here is the lawful way to make someone account for the difference.
+
+**Every claim carries its source and both dates** — when it was published and when it was
+retrieved — because a procurement record that was accurate in March may not be in September.
+
+**"Check again" is adversarial on purpose.** A second pass that actively looks for the
+innocent explanation: a later variation order, a boundary reassignment, a phase-two contract, a
+debarred contractor. A finding that survives it is worth sending; one that does not should never
+have left the phone.
+
+**Emergency numbers are hardcoded, never generated.** WAZI raises the safety banner from the
+meaning of what was said, in any language — but the numbers on it come from the country pack. A
+hallucinated emergency line is the one failure this app must not have.
+
+### Where the facts come from
+
+The Nigeria country pack (`src/data/jurisdictions/ng/`) is hand-verified against:
+
+| Source | Authority | Tier |
+|---|---|---|
+| Nigeria Open Contracting Portal (NOCOPO) | Bureau of Public Procurement | Primary |
+| FGN Open Treasury Portal | Office of the Accountant-General | Primary |
+| NPHCDA Health Facility Baseline Register | National Primary Health Care Development Agency | Primary |
+| Budget Office of the Federation | Federal Ministry of Budget & Economic Planning | Primary |
+| Ogun State PHC Development Board | Ogun State Ministry of Health | Secondary |
+
+**Stated plainly:** retrieval in this proof of concept is *deterministic*, not live-scraped. The
+flagship case is real, hand-verified, and carries its references; the retrieval sequence
+replays that verification rather than querying the portals at demo time. That is a deliberate
+choice — it is what makes the app work offline, on a bad connection, and in front of judges
+whose Wi-Fi we do not control. Swapping the pack for live connectors is an adapter change behind
+the same evidence-state contract, not a redesign.
+
+---
+
+## Designed for the conditions, not the demo
+
+| Constraint | What it meant here |
+|---|---|
+| **Multilingual access** | Language is detected from speech and mirrored, including code-mixing and mid-conversation switches. Literacy in a dominant national language is not a precondition for using this. |
+| **Low bandwidth, basic devices** | Raw PCM, not video. Sessions survive a 20 s dropout with context intact. Low-data mode strips animation and glow. Verified at 360 px with no sideways scroll. |
+| **Accessibility & inclusion** | Every voice interaction has a text equivalent on the *same* session — not a lesser fallback engine. Live captions are real transcripts of both sides. A refused microphone degrades the session instead of ending it. |
+| **Privacy & security** | EXIF stripped on-device before an image is sent anywhere. A disclosure sheet lets a user withhold their name, contact and precise location and sign as a concerned resident. The API key never reaches the browser. Nothing is dispatched without explicit human confirmation. |
+| **Trust & verification** | Evidence states over confidence scores; sources and both dates on every claim; an adversarial re-check; emergency numbers never model-generated. |
+| **Local relevance** | Statutes, response clocks, named officers and escalation routes come from a per-jurisdiction pack, not from the model. |
+| **Clear next steps** | The journey does not end at "here is what the record says". It ends at a letter, addressed to a named officer, with a legal basis, a deadline, and somewhere to escalate when the deadline passes. |
+
+---
+
+## Scaling past Nigeria
+
+Everything jurisdiction-specific lives in one directory:
+
+```
+src/data/jurisdictions/ng/
+  institutions.json     who is responsible, and who is the accounting officer
+  procedures.json       statutes, response clocks, mandatory fields
+  contacts.json         verified desks and portals
+  projects.json         the verified case record
+  source_registry.json  where each fact came from, and how often it changes
+```
+
+A new country is a new directory plus `WAZI_JURISDICTION`. Nothing in the voice pipeline, the
+evidence-state model, the drafting engine or the UI knows what country it is in. The parts that
+*should* differ between Lagos and Nairobi are data; the parts that should not, are code.
+
+---
+
+## Repository map
+
+```
+server.js                    one process: UI + /api + /live
+server/
+  wazi-identity.js           core identity, language mirroring, personas, moments
+  live-models.js             measured model capabilities & fallback chain
+  civic-tools.js             the tools the voice can call on the interface
+  live-bridge.js             one browser socket ↔ one Gemini session
+  session-vault.js           parks sessions across a dropped connection
+src/
+  hooks/useLiveAudio.ts      the live session, as one hook
+  lib/audio/MicCapture.ts    16 kHz capture → PCM16 frames
+  lib/audio/PcmPlayer.ts     24 kHz gapless playback + viseme analyser
+  lib/live-protocol.ts       browser half of the /live wire contract
+  lib/evidence-engine.ts     verification, adversarial re-check, drafting
+  lib/privacy.ts             EXIF stripping & disclosure filters
+  data/jurisdictions/ng/     the Nigeria country pack
+  components/                UI
+scripts/
+  verify-live.mjs            voice pipeline, over the real socket
+  verify-journey.mjs         the whole journey, in a real browser
+  verify-browser.mjs         the browser audio stack
+```
+
+---
+
+## Documentation
+
+| | |
+|---|---|
+| [`SUBMISSION.md`](SUBMISSION.md) | The written summary: track, sources, trust, and how AI tools were used |
+| [`DECISIONS.md`](DECISIONS.md) | Every architectural decision and why, including the ones reversed |
+| [`AI_CODING_LOG.md`](AI_CODING_LOG.md) | How this was built with AI tooling, and what the harnesses caught |
+| [`THREAT_MODEL.md`](THREAT_MODEL.md) | Threats, mitigations, and the human approval gate |
+| [`ACCESSIBILITY.md`](ACCESSIBILITY.md) | WCAG posture, multimodal parity, language access |
+
+---
+
+## Licence
+
+Apache 2.0 / MIT. Built for the Open Society Foundations × Andela hackathon, 2026.

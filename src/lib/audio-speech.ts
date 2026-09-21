@@ -1,6 +1,14 @@
-/* WAZI Civic — Audio & Speech Synthesis Engine
-   Implements crystal audio feedback via Web Audio API and SpeechRecognition / SpeechSynthesis
-*/
+/* WAZI Civic — interface sound.
+ *
+ * Synthesised chimes only. WAZI's *voice* comes from the Gemini Live session as
+ * 24kHz PCM and is played by src/lib/audio/PcmPlayer.ts — nothing here speaks.
+ *
+ * `speakWazi`, which wrapped window.speechSynthesis, used to live at the bottom
+ * of this file. It is gone. A robot reading WAZI's words in a browser's default
+ * voice is not a fallback for a warm human collaborator who matches your accent;
+ * it is a different, worse product, and having it available meant the real
+ * pipeline could stay broken without anyone noticing.
+ */
 
 class SoundPlayer {
   private ctx: AudioContext | null = null;
@@ -130,51 +138,3 @@ class SoundPlayer {
 }
 
 export const sounds = new SoundPlayer();
-
-// Cold Start Optimization: Eagerly load voices in module scope
-let availableVoices: SpeechSynthesisVoice[] = [];
-if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-  // Initialize voices immediately if already available
-  availableVoices = window.speechSynthesis.getVoices();
-  // Listen for voiceschanged to update the list when they load asynchronously
-  window.speechSynthesis.onvoiceschanged = () => {
-    availableVoices = window.speechSynthesis.getVoices();
-  };
-}
-
-// Speech Synthesis Helper with Viseme support
-export function speakWazi(
-  text: string,
-  onStart?: () => void,
-  onEnd?: () => void,
-  onBoundary?: (e: SpeechSynthesisEvent) => void
-): () => void {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    onStart?.();
-    setTimeout(() => onEnd?.(), 2000);
-    return () => {};
-  }
-
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 1.0;
-  utterance.pitch = 1.05;
-
-  // Prefer natural English voices if available (uses cached availableVoices)
-  const englishVoice = availableVoices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha')));
-  if (englishVoice) {
-    utterance.voice = englishVoice;
-  }
-
-  if (onStart) utterance.onstart = onStart;
-  if (onEnd) utterance.onend = onEnd;
-  if (onBoundary) utterance.onboundary = onBoundary;
-  utterance.onerror = () => onEnd?.();
-
-  window.speechSynthesis.speak(utterance);
-
-  return () => {
-    window.speechSynthesis.cancel();
-    onEnd?.();
-  };
-}

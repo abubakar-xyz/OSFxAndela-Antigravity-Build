@@ -4,12 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:server": "node server.js",
-    "dev:all": "npm-run-all --parallel dev dev:server",
+    "dev": "node server.js",
     "build": "tsc -b && vite build",
+    "start": "NODE_ENV=production node server.js",
+    "preview": "npm run build && npm start",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "verify:live": "node scripts/verify-live.mjs",
+    "verify:browser": "node scripts/verify-browser.mjs",
+    "verify": "npm run build && node scripts/verify-live.mjs && node scripts/verify-browser.mjs",
+    "verify:journey": "node scripts/verify-journey.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.23.0",
@@ -30,6 +33,7 @@
     "nodemon": "^3.1.14",
     "npm-run-all": "^4.1.5",
     "oxlint": "^1.81.0",
+    "playwright": "^1.56.1",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   }

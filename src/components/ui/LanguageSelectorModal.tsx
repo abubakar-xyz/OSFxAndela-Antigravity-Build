@@ -39,6 +39,8 @@ const LANGUAGES: LanguageOption[] = [
 interface LanguageSelectorModalProps {
   isOpen: boolean;
   currentLang: string;
+  /** What WAZI has actually heard so far, if anything. */
+  detectedLanguage?: string | null;
   onClose: () => void;
   onSelectLanguage: (langCode: string) => void;
 }
@@ -46,6 +48,7 @@ interface LanguageSelectorModalProps {
 export const LanguageSelectorModal: React.FC<LanguageSelectorModalProps> = ({
   isOpen,
   currentLang,
+  detectedLanguage = null,
   onClose,
   onSelectLanguage
 }) => {
@@ -81,7 +84,7 @@ export const LanguageSelectorModal: React.FC<LanguageSelectorModalProps> = ({
         <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--midnight-ink)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
             <Globe2 size={20} color="var(--luminous-teal)" />
-            <h2 style={{ margin: 0, fontSize: '18px', color: 'var(--warm-paper)' }}>Select Language</h2>
+            <h2 style={{ margin: 0, fontSize: '18px', color: 'var(--warm-paper)' }}>Language</h2>
           </div>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--stone-gray)', cursor: 'pointer' }}>
             <X size={24} />
@@ -89,11 +92,32 @@ export const LanguageSelectorModal: React.FC<LanguageSelectorModalProps> = ({
         </div>
         
         <div style={{ padding: 'var(--space-4)', flex: 1, overflowY: 'auto' }}>
+          {/* WAZI matches whoever is speaking. This list only sets where she
+              starts before she has heard anyone — it is not a lock. */}
+          <div
+            style={{
+              background: 'rgba(22, 198, 177, 0.08)',
+              border: '1px solid rgba(22, 198, 177, 0.3)',
+              borderRadius: '12px',
+              padding: '12px 14px',
+              marginBottom: 'var(--space-4)'
+            }}
+          >
+            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--warm-paper)', marginBottom: '4px' }}>
+              {detectedLanguage ? `WAZI is speaking ${detectedLanguage}` : 'WAZI follows your voice'}
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--stone-gray)', lineHeight: 1.45 }}>
+              She listens to how you speak and answers in the same language, dialect and accent —
+              including when you switch mid-sentence. You never have to set this. Choosing below only
+              changes where she starts before she has heard you.
+            </div>
+          </div>
+
           <div style={{ position: 'relative', marginBottom: 'var(--space-4)' }}>
             <Search size={16} color="var(--stone-gray)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
             <input 
               type="text" 
-              placeholder="Search 50+ languages..." 
+              placeholder="Search starting languages…" 
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{

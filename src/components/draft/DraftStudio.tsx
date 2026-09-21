@@ -1,6 +1,6 @@
 /* WAZI Civic — Civic Draft Studio Workspace */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import type { CivicCase, CivicDraft, DraftFormat, DisclosureSettings, WaziState } from '../../lib/types';
 import { generateCivicDraft } from '../../lib/evidence-engine';
 import { applyDisclosureToDraft } from '../../lib/privacy';
@@ -79,6 +79,15 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
     onShowToast('Preparing document print/PDF view...');
     window.print();
   };
+
+  // Keep the paper as tall as the letter it holds.
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [editableBody, selectedFormat]);
 
   const handleOpenEmailClient = () => {
     setIsEmailSheetOpen(true);
@@ -298,7 +307,12 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
           maxWidth: '800px',
           margin: '0 auto',
           color: '#111827', // Darker ink color for contrast on white
-          aspectRatio: '1 / 1.414', // A4 aspect ratio approximation (optional, might be too tall)
+          // No fixed aspect ratio. A4 proportions look right until the letter is
+          // longer than the box: the height is then set by the ratio while the
+          // content keeps going, so the attachments list spilled out of the
+          // paper and landed on top of the action buttons below — which is why
+          // "Open Email App" could not be clicked on a phone. The page grows
+          // with the document instead.
           minHeight: '600px'
         }}
       >
@@ -317,11 +331,15 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
         </div>
 
         <textarea
+          ref={bodyRef}
           value={editableBody}
           onChange={(e) => setEditableBody(e.target.value)}
           style={{
             width: '100%',
-            height: '400px',
+            // Grows to fit the letter, so what is on screen is the whole
+            // document rather than a window onto it.
+            minHeight: '400px',
+            overflow: 'hidden',
             border: 'none',
             outline: 'none',
             resize: 'none',

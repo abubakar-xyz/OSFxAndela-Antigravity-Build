@@ -24,7 +24,7 @@ export const TalkButton: React.FC<TalkButtonProps> = ({
         justifyContent: 'center'
       }}
     >
-      <VoiceRings active={isListening} size={120} />
+      <VoiceRings active={isListening} size={100} />
 
       <button
         onClick={onToggle}

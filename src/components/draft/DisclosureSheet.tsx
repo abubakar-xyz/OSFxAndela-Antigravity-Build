@@ -82,16 +82,14 @@ export const DisclosureSheet: React.FC<DisclosureSheetProps> = ({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: 'var(--space-3)',
-                background: 'var(--neutral-100)',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--warm-paper-80)'
+                padding: 'var(--space-3) 0',
+                borderBottom: '1px solid var(--midnight-ink-70)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                 <User size={18} color="var(--neutral-40)" />
                 <div>
-                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
                     Include Personal Name
                   </div>
                   <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--neutral-60)' }}>
@@ -130,17 +128,15 @@ export const DisclosureSheet: React.FC<DisclosureSheetProps> = ({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: 'var(--space-3)',
-                background: 'var(--neutral-100)',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--warm-paper-80)'
+                padding: 'var(--space-3) 0',
+                borderBottom: '1px solid var(--midnight-ink-70)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                 <Phone size={18} color="var(--neutral-40)" />
                 <div>
-                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)' }}>
-                    Include Phone / Email for Feedback
+                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
+                    Include Phone / Email
                   </div>
                   <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--neutral-60)' }}>
                     {settings.includeContact ? 'Agency can contact you with resolution' : 'Contact withheld for privacy'}
@@ -178,16 +174,14 @@ export const DisclosureSheet: React.FC<DisclosureSheetProps> = ({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: 'var(--space-3)',
-                background: 'var(--neutral-100)',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--warm-paper-80)'
+                padding: 'var(--space-3) 0',
+                borderBottom: '1px solid var(--midnight-ink-70)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                 <MapPin size={18} color="var(--neutral-40)" />
                 <div>
-                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
                     Approximate Location Only
                   </div>
                   <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--neutral-60)' }}>
@@ -209,16 +203,14 @@ export const DisclosureSheet: React.FC<DisclosureSheetProps> = ({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: 'var(--space-3)',
-                background: 'var(--neutral-100)',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--warm-paper-80)'
+                padding: 'var(--space-3) 0',
+                borderBottom: '1px solid var(--midnight-ink-70)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                 <EyeOff size={18} color="var(--neutral-40)" />
                 <div>
-                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
                     Strip EXIF Hardware Metadata
                   </div>
                   <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--neutral-60)' }}>

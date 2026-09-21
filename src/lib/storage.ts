@@ -12,13 +12,15 @@ export interface AppSettings {
   soundEnabled: boolean;
   apiKey?: string;
   useLiveApi: boolean;
+  voiceName: string;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
-  language: 'EN',
+  language: 'en-NG', // updated default to Nigerian English
   lowDataMode: false,
   soundEnabled: true,
-  useLiveApi: false
+  useLiveApi: false,
+  voiceName: 'Kore'
 };
 
 export const loadSavedCases = (): CivicCase[] => {

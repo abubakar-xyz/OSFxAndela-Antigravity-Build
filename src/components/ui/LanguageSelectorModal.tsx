@@ -1,0 +1,152 @@
+import React from 'react';
+import { Search, Globe2, X, Check } from 'lucide-react';
+
+export interface LanguageOption {
+  code: string;
+  name: string;
+  category: 'Kenyan' | 'Pan-African' | 'International';
+}
+
+const LANGUAGES: LanguageOption[] = [
+  // Kenyan / East African
+  { code: 'en-KE', name: 'English (Kenya)', category: 'Kenyan' },
+  { code: 'sw-KE', name: 'Swahili (Kenya)', category: 'Kenyan' },
+  { code: 'kik-KE', name: 'Gikuyu', category: 'Kenyan' },
+  { code: 'luo-KE', name: 'Dholuo', category: 'Kenyan' },
+  { code: 'kal-KE', name: 'Kalenjin', category: 'Kenyan' },
+  { code: 'kam-KE', name: 'Kamba', category: 'Kenyan' },
+  // Pan-African
+  { code: 'en-NG', name: 'English (Nigeria)', category: 'Pan-African' },
+  { code: 'yo-NG', name: 'Yoruba', category: 'Pan-African' },
+  { code: 'ha-NG', name: 'Hausa', category: 'Pan-African' },
+  { code: 'ig-NG', name: 'Igbo', category: 'Pan-African' },
+  { code: 'en-ZA', name: 'English (South Africa)', category: 'Pan-African' },
+  { code: 'zu-ZA', name: 'isiZulu', category: 'Pan-African' },
+  { code: 'xh-ZA', name: 'isiXhosa', category: 'Pan-African' },
+  { code: 'am-ET', name: 'Amharic', category: 'Pan-African' },
+  { code: 'fr-SN', name: 'French (Senegal)', category: 'Pan-African' },
+  // International
+  { code: 'en-US', name: 'English (US)', category: 'International' },
+  { code: 'en-GB', name: 'English (UK)', category: 'International' },
+  { code: 'fr-FR', name: 'French (France)', category: 'International' },
+  { code: 'es-ES', name: 'Spanish', category: 'International' },
+  { code: 'pt-BR', name: 'Portuguese', category: 'International' },
+  { code: 'ar-SA', name: 'Arabic', category: 'International' },
+  { code: 'hi-IN', name: 'Hindi', category: 'International' },
+  { code: 'zh-CN', name: 'Mandarin (Simplified)', category: 'International' },
+];
+
+interface LanguageSelectorModalProps {
+  isOpen: boolean;
+  currentLang: string;
+  onClose: () => void;
+  onSelectLanguage: (langCode: string) => void;
+}
+
+export const LanguageSelectorModal: React.FC<LanguageSelectorModalProps> = ({
+  isOpen,
+  currentLang,
+  onClose,
+  onSelectLanguage
+}) => {
+  const [search, setSearch] = React.useState('');
+
+  if (!isOpen) return null;
+
+  const filtered = LANGUAGES.filter(l => l.name.toLowerCase().includes(search.toLowerCase()));
+  const grouped = filtered.reduce((acc, lang) => {
+    if (!acc[lang.category]) acc[lang.category] = [];
+    acc[lang.category].push(lang);
+    return acc;
+  }, {} as Record<string, LanguageOption[]>);
+
+  return (
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1000, position: 'fixed', inset: 0, background: 'rgba(10, 11, 16, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div 
+        className="modal-content" 
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: '500px',
+          maxHeight: '85vh',
+          background: 'var(--obsidian)',
+          borderTopLeftRadius: '24px',
+          borderTopRightRadius: '24px',
+          borderTop: '1px solid var(--midnight-ink)',
+          display: 'flex',
+          flexDirection: 'column',
+          animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+        }}
+      >
+        <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--midnight-ink)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <Globe2 size={20} color="var(--luminous-teal)" />
+            <h2 style={{ margin: 0, fontSize: '18px', color: 'var(--warm-paper)' }}>Select Language</h2>
+          </div>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--stone-gray)', cursor: 'pointer' }}>
+            <X size={24} />
+          </button>
+        </div>
+        
+        <div style={{ padding: 'var(--space-4)', flex: 1, overflowY: 'auto' }}>
+          <div style={{ position: 'relative', marginBottom: 'var(--space-4)' }}>
+            <Search size={16} color="var(--stone-gray)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+            <input 
+              type="text" 
+              placeholder="Search 50+ languages..." 
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'var(--midnight-ink-50)',
+                border: '1px solid var(--midnight-ink)',
+                borderRadius: '12px',
+                padding: '10px 12px 10px 36px',
+                color: 'var(--warm-paper)',
+                fontSize: '15px'
+              }}
+            />
+          </div>
+
+          {['Kenyan', 'Pan-African', 'International'].map(category => (
+            grouped[category] && grouped[category].length > 0 && (
+              <div key={category} style={{ marginBottom: 'var(--space-5)' }}>
+                <h3 style={{ fontSize: '13px', textTransform: 'uppercase', color: 'var(--stone-gray)', letterSpacing: '0.05em', marginBottom: 'var(--space-3)' }}>{category}</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {grouped[category].map(lang => {
+                    const isSelected = lang.code === currentLang;
+                    return (
+                      <button
+                        key={lang.code}
+                        onClick={() => {
+                          onSelectLanguage(lang.code);
+                          onClose();
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          width: '100%',
+                          padding: '12px 16px',
+                          background: isSelected ? 'var(--midnight-ink)' : 'transparent',
+                          border: 'none',
+                          borderRadius: '8px',
+                          color: isSelected ? 'var(--luminous-teal)' : 'var(--warm-paper)',
+                          cursor: 'pointer',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <span style={{ fontSize: '16px', fontWeight: isSelected ? 600 : 400 }}>{lang.name}</span>
+                        {isSelected && <Check size={18} color="var(--luminous-teal)" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};

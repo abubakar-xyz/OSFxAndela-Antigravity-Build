@@ -24,7 +24,8 @@ export type WaziState =
   | 'speaking'
   | 'waiting_permission'
   | 'companion'
-  | 'attention';
+  | 'attention'
+  | 'error';
 
 export type EvidenceState =
   | 'VERIFIED'

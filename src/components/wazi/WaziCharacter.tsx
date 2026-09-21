@@ -1,13 +1,16 @@
-/* WAZI Civic — Luminous 2D SVG Character
-   States: resting, listening, thinking, speaking, waiting_permission, attention
+/* WAZI Civic — Alive 2D SVG Character with Micro-Behaviors
+   States: resting, listening, thinking, speaking, waiting_permission, attention, error
+   Inspired by SABI SabiHead: blink, gaze drift, RMS pulse, head tilt
 */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { WaziState } from '../../lib/types';
 
 interface WaziCharacterProps {
   state: WaziState;
   size?: number;
+  micLevel?: number;
+  speakerLevel?: number;
   onClick?: () => void;
   className?: string;
 }
@@ -15,6 +18,8 @@ interface WaziCharacterProps {
 export const WaziCharacter: React.FC<WaziCharacterProps> = ({
   state = 'resting',
   size = 140,
+  micLevel = 0,
+  speakerLevel = 0,
   onClick,
   className = ''
 }) => {
@@ -23,11 +28,71 @@ export const WaziCharacter: React.FC<WaziCharacterProps> = ({
   const isThinking = state === 'thinking';
   const isWaiting = state === 'waiting_permission';
   const isAttention = state === 'attention';
+  const isError = state === 'error';
+  const isResting = state === 'resting';
+
+  const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
+  const [isBlinking, setIsBlinking] = React.useState(false);
+  const blinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ─── Periodic Random Blink (every 3-7 seconds) ───
+  useEffect(() => {
+    const scheduleBlink = () => {
+      const delay = 3000 + Math.random() * 4000; // 3-7s
+      blinkTimerRef.current = setTimeout(() => {
+        setIsBlinking(true);
+        setTimeout(() => setIsBlinking(false), 180); // Blink duration
+        scheduleBlink();
+      }, delay);
+    };
+    scheduleBlink();
+    return () => {
+      if (blinkTimerRef.current) clearTimeout(blinkTimerRef.current);
+    };
+  }, []);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    setMousePos({ x, y });
+  };
+
+  const resetMouse = () => {
+    setMousePos({ x: 0, y: 0 });
+  };
+
+  // RMS-driven dynamic scale for the core orb
+  const coreScale = isSpeaking
+    ? 1 + speakerLevel * 1.5  // Pulse with voice amplitude
+    : isListening
+    ? 1 + micLevel * 0.8      // Softer breathing with mic
+    : 1;
+
+  // Head tilt: subtle rotation based on state. Nodding when speaking.
+  const headTilt = isSpeaking 
+    ? 1.5 + Math.sin(Date.now() / 150) * (speakerLevel * 2) 
+    : isListening ? -1 
+    : isThinking ? 2 : 0;
+  
+  // Mouth opening mapped to speakerLevel
+  const mouthOpenAmount = isSpeaking ? speakerLevel * 100 : 0;
+
+  // Eye animation: gaze drift when idle, mouse tracking when active
+  const eyeTransform = isResting
+    ? undefined // CSS animation handles it
+    : `translateZ(60px) translate(${mousePos.x * 20}px, ${mousePos.y * 20}px)`;
+
+  const eyeAnimation = isResting
+    ? 'wazi-gaze-drift 8s infinite ease-in-out'
+    : 'none';
 
   return (
     <div
       className={`wazi-character-container ${state} ${className}`}
       onClick={onClick}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={resetMouse}
       role="img"
       aria-label={`WAZI civic companion is currently ${state}`}
       style={{
@@ -38,195 +103,194 @@ export const WaziCharacter: React.FC<WaziCharacterProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
         cursor: onClick ? 'pointer' : 'default',
-        transition: 'transform var(--duration-normal) var(--ease-spring)'
+        perspective: '1000px',
+        transition: 'transform var(--duration-normal) var(--ease-spring)',
+        animation: isError ? 'wazi-error-shake 0.5s ease-in-out' : 'none'
       }}
     >
-      {/* Outer Ambient Aura Glow */}
+      {/* 3D Container with Parallax Tilt + Head Tilt */}
       <div
-        className="ambient-glow"
         style={{
-          position: 'absolute',
           width: '100%',
           height: '100%',
-          borderRadius: '50%',
-          background: isWaiting || isAttention
-            ? 'radial-gradient(circle, rgba(244, 185, 66, 0.45) 0%, rgba(244, 185, 66, 0) 70%)'
-            : 'radial-gradient(circle, rgba(22, 198, 177, 0.40) 0%, rgba(22, 198, 177, 0) 70%)',
-          filter: 'blur(16px)',
-          animation: isWaiting || isAttention ? 'wazi-glow-pulse-amber 2.5s infinite ease-in-out' : 'wazi-glow-pulse 3.5s infinite ease-in-out',
-          pointerEvents: 'none'
-        }}
-      />
-
-      {/* Thinking Orbit Particles */}
-      {isThinking && (
-        <div
-          className="particle-orbit"
-          style={{
-            position: 'absolute',
-            width: size * 1.25,
-            height: size * 1.25,
-            animation: 'wazi-thinking-orbit 4s linear infinite',
-            pointerEvents: 'none'
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              top: '4px',
-              left: '50%',
-              width: '7px',
-              height: '7px',
-              borderRadius: '50%',
-              background: 'var(--luminous-teal-light)',
-              boxShadow: '0 0 10px var(--luminous-teal)'
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '10px',
-              left: '20%',
-              width: '5px',
-              height: '5px',
-              borderRadius: '50%',
-              background: 'var(--sun-amber)',
-              boxShadow: '0 0 8px var(--sun-amber)'
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: '40%',
-              right: '2px',
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              background: 'var(--warm-paper)',
-              boxShadow: '0 0 8px var(--warm-paper)'
-            }}
-          />
-        </div>
-      )}
-
-      {/* Main SVG Character Body */}
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 140 140"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        style={{
+          position: 'relative',
+          transformStyle: 'preserve-3d',
+          transform: `rotateY(${mousePos.x * 20}deg) rotateX(${-mousePos.y * 20}deg) rotate(${headTilt}deg)`,
+          transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
           animation: isSpeaking
             ? 'wazi-speaking 0.6s infinite ease-in-out'
             : isListening
             ? 'none'
-            : 'wazi-breathe 4s infinite ease-in-out',
-          transform: isListening ? 'scale(1.04) translateY(-2px)' : 'none',
-          transition: 'all 0.4s var(--ease-out)'
+            : 'wazi-breathe 4s infinite ease-in-out'
         }}
       >
-        <defs>
-          {/* Internal Radial Gradient */}
-          <radialGradient id="waziCoreGrad" cx="45%" cy="40%" r="60%">
-            <stop offset="0%" stopColor="#8DF5E7" />
-            <stop offset="45%" stopColor="#16C6B1" />
-            <stop offset="85%" stopColor="#0B7A6E" />
-            <stop offset="100%" stopColor="#074B43" />
-          </radialGradient>
+        {/* Core Glowing Orb — RMS-driven pulse */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: '10%',
+            borderRadius: '50%',
+            background: isError
+              ? 'radial-gradient(circle at 30% 30%, #F4B942 0%, #D4872E 40%, #8B4513 80%)'
+              : 'radial-gradient(circle at 30% 30%, #8DF5E7 0%, #16C6B1 40%, #0B7A6E 80%)',
+            boxShadow: isError
+              ? '0 0 40px rgba(244, 185, 66, 0.6), 0 0 80px rgba(244, 185, 66, 0.3)'
+              : isWaiting || isAttention
+              ? 'var(--wazi-glow-amber)'
+              : 'var(--wazi-glow)',
+            transform: `translateZ(-10px) scale(${coreScale})`,
+            transition: isSpeaking || isListening ? 'transform 0.08s ease-out' : 'all 0.4s ease'
+          }}
+        />
 
-          {/* Eye Glow Filter */}
-          <filter id="eyeGlow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="2.5" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
+        {/* Outer Glass Shell (Depth and Refraction) */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            backdropFilter: 'blur(4px)',
+            transform: 'translateZ(20px)',
+            boxShadow: 'inset -10px -10px 20px rgba(0,0,0,0.1)'
+          }}
+        />
 
-          {/* Warm Base Shading */}
-          <linearGradient id="warmBaseGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(244, 185, 66, 0.3)" />
-            <stop offset="100%" stopColor="rgba(22, 198, 177, 0)" />
-          </linearGradient>
-        </defs>
+        {/* Ambient Heart Pulse — Driven by real audio signals */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: '30%',
+            borderRadius: '50%',
+            background: isError ? '#F4B942' : isWaiting || isAttention ? 'var(--sun-amber)' : 'var(--warm-paper)',
+            filter: 'blur(12px)',
+            transform: `translateZ(40px) scale(${coreScale})`,
+            opacity: 0.6 + (isSpeaking ? speakerLevel : micLevel),
+            transition: isSpeaking || isListening ? 'all 0.08s ease-out' : 'all 0.4s ease',
+            animation: isListening ? 'wazi-listening-breathe 2s infinite ease-in-out' : 'none'
+          }}
+        />
 
-        {/* Soft Shadow at base */}
-        <ellipse cx="70" cy="126" rx="36" ry="7" fill="rgba(7, 24, 32, 0.45)" />
+        {/* "Eyes" / Focus Points — Blink + Gaze Drift + Mouse Tracking */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '40%',
+            left: '30%',
+            width: '12%',
+            height: isBlinking ? '3%' : '12%',
+            borderRadius: '50%',
+            background: isError ? '#FFF3CD' : '#FFF',
+            boxShadow: isError ? '0 0 10px #F4B942' : '0 0 10px #FFF',
+            transform: eyeTransform,
+            animation: eyeAnimation,
+            transition: 'height 0.08s ease-out, transform 0.1s linear'
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: '40%',
+            right: '30%',
+            width: '12%',
+            height: isBlinking ? '3%' : '12%',
+            borderRadius: '50%',
+            background: isError ? '#FFF3CD' : '#FFF',
+            boxShadow: isError ? '0 0 10px #F4B942' : '0 0 10px #FFF',
+            transform: eyeTransform,
+            animation: eyeAnimation,
+            transition: 'height 0.08s ease-out, transform 0.1s linear'
+          }}
+        />
 
-        {/* Waiting Permission Base Halo */}
-        {isWaiting && (
-          <ellipse
-            cx="70"
-            cy="120"
-            rx="46"
-            ry="10"
-            fill="none"
-            stroke="var(--sun-amber)"
-            strokeWidth="2.5"
-            strokeDasharray="5 5"
-            style={{ animation: 'wazi-thinking-orbit 8s linear infinite' }}
+        {/* ─── Articulated Lips & Oral Cavity ─── */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '65%',
+            left: '50%',
+            transform: `translateX(-50%) translateZ(65px) ${eyeTransform ? eyeTransform.replace('translateZ(60px)', '') : ''}`,
+            width: '24%',
+            height: '10%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'transform 0.1s linear'
+          }}
+        >
+          {/* Inner Cavity (Amber Luminescence) */}
+          <div
+            style={{
+              position: 'absolute',
+              width: `${100 + mouthOpenAmount * 0.2}%`,
+              height: `${10 + mouthOpenAmount}%`,
+              background: 'radial-gradient(circle at top, var(--sun-amber), #8B4513)',
+              borderRadius: '20px',
+              boxShadow: `0 0 ${10 + mouthOpenAmount * 0.5}px var(--wazi-glow-amber)`,
+              opacity: isSpeaking ? Math.min(1, 0.4 + speakerLevel) : 0,
+              transition: 'height 0.05s ease-out, opacity 0.05s ease-out, width 0.05s ease-out',
+              zIndex: 1
+            }}
           />
+          
+          {/* Upper Lip */}
+          <div
+            style={{
+              position: 'absolute',
+              top: `-${mouthOpenAmount * 0.4}%`,
+              width: '100%',
+              height: '4px',
+              background: isError ? '#F4B942' : 'var(--warm-paper)',
+              borderRadius: '10px',
+              transition: 'top 0.05s ease-out',
+              zIndex: 2
+            }}
+          />
+
+          {/* Lower Lip */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: `-${mouthOpenAmount * 0.4}%`,
+              width: '90%',
+              height: '4px',
+              background: isError ? '#F4B942' : 'var(--warm-paper)',
+              borderRadius: '10px',
+              transition: 'bottom 0.05s ease-out',
+              zIndex: 2
+            }}
+          />
+        </div>
+
+        {/* Thinking Orbit Particles */}
+        {isThinking && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: '-10%',
+              animation: 'wazi-thinking-orbit 3s linear infinite',
+              pointerEvents: 'none',
+              transformStyle: 'preserve-3d'
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: '50%',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: 'var(--sun-amber)',
+                boxShadow: '0 0 10px var(--sun-amber)',
+                transform: 'translateZ(30px)'
+              }}
+            />
+          </div>
         )}
-
-        {/* River-stone Organic Luminescent Body */}
-        <path
-          d="M70 20
-             C104 20, 124 38, 124 72
-             C124 104, 102 120, 70 120
-             C38 120, 16 104, 16 72
-             C16 38, 36 20, 70 20 Z"
-          fill="url(#waziCoreGrad)"
-        />
-
-        {/* Internal Subtle Light Crescent */}
-        <path
-          d="M40 32
-             C56 24, 84 24, 100 32
-             C84 36, 56 36, 40 32 Z"
-          fill="rgba(255, 255, 255, 0.45)"
-          filter="url(#eyeGlow)"
-        />
-
-        {/* Subtle Ambient Heart Pulse Core */}
-        <circle
-          cx="70"
-          cy="70"
-          r={isSpeaking ? '30' : '24'}
-          fill="url(#warmBaseGrad)"
-          style={{ transition: 'r 0.3s var(--ease-out)' }}
-        />
-
-        {/* Eyes: Expressive Warm Luminous Points */}
-        <g id="waziEyes">
-          {/* Left Eye */}
-          <circle
-            cx={isThinking ? '54' : isListening ? '52' : '50'}
-            cy={isThinking ? '62' : '60'}
-            r={isListening ? '5.5' : isSpeaking ? '5' : '4'}
-            fill="#FFFFFF"
-            filter="url(#eyeGlow)"
-          />
-          <circle
-            cx={isThinking ? '54' : isListening ? '52' : '50'}
-            cy={isThinking ? '62' : '60'}
-            r={isListening ? '2.5' : '2'}
-            fill="#F4B942"
-          />
-
-          {/* Right Eye */}
-          <circle
-            cx={isThinking ? '86' : isListening ? '88' : '90'}
-            cy={isThinking ? '62' : '60'}
-            r={isListening ? '5.5' : isSpeaking ? '5' : '4'}
-            fill="#FFFFFF"
-            filter="url(#eyeGlow)"
-          />
-          <circle
-            cx={isThinking ? '86' : isListening ? '88' : '90'}
-            cy={isThinking ? '62' : '60'}
-            r={isListening ? '2.5' : '2'}
-            fill="#F4B942"
-          />
-        </g>
-      </svg>
+      </div>
     </div>
   );
 };

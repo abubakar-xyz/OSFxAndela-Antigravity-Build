@@ -18,7 +18,11 @@ export const CaseCard: React.FC<CaseCardProps> = ({ civicCase, onSelect }) => {
       style={{
         cursor: 'pointer',
         transition: 'all var(--duration-fast)',
-        border: '1px solid var(--warm-paper-80)',
+        border: 'none',
+        borderLeft: '4px solid var(--midnight-ink-70)',
+        borderBottom: '1px solid var(--warm-paper-80)',
+        backgroundColor: 'transparent',
+        paddingLeft: 'var(--space-2)',
         marginBottom: 'var(--space-3)'
       }}
     >

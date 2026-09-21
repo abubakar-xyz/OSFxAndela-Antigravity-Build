@@ -21,8 +21,8 @@ html, body {
   min-height: 100dvh;
   margin: 0;
   padding: 0;
-  background-color: var(--midnight-ink-95);
-  color: var(--warm-paper);
+  background-color: var(--warm-paper-95);
+  color: var(--neutral-10);
   font-family: var(--font-primary);
   user-select: none;
   -webkit-user-select: none;

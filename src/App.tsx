@@ -1,6 +1,6 @@
 /* WAZI Civic — Master Application & State Controller */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import type {
   CivicCase,
   ExtractedClue,
@@ -25,6 +25,7 @@ import {
   simulateSearchSteps,
   performCheckAgain
 } from './lib/evidence-engine';
+import { useLiveAudio } from './hooks/useLiveAudio';
 
 // UI & Presentation Components
 import { WaziCharacter } from './components/wazi/WaziCharacter';
@@ -33,8 +34,8 @@ import { TalkButton } from './components/conversation/TalkButton';
 import { TextInput } from './components/conversation/TextInput';
 import { ActionDock } from './components/ui/ActionDock';
 import { PrivacyShield } from './components/ui/PrivacyShield';
-import { LanguagePill } from './components/ui/LanguagePill';
 import { SettingsModal } from './components/ui/SettingsModal';
+import { LanguageSelectorModal } from './components/ui/LanguageSelectorModal';
 import { CameraModal } from './components/workspace/CameraModal';
 import { EvidenceWorkspace } from './components/workspace/EvidenceWorkspace';
 import { DraftStudio } from './components/draft/DraftStudio';
@@ -42,12 +43,31 @@ import { CaseList } from './components/cases/CaseList';
 import { Settings as SettingsIcon, Sparkles } from 'lucide-react';
 
 export const App: React.FC = () => {
+  const [settings, setSettings] = useState<AppSettings>(loadSettings);
+  
+  // Live Audio Hook
+  const { 
+    waziState: liveWaziState, 
+    micLevel, 
+    speakerLevel, 
+    isConnected,
+    error: liveAudioError,
+    connect, 
+    disconnect, 
+    sendTextPrompt 
+  } = useLiveAudio(
+    undefined,
+    settings.voiceName,
+    settings.language
+  );
+
   // Navigation & View States
   const [currentView, setCurrentView] = useState<'home' | 'evidence' | 'draft' | 'cases'>('home');
   const [waziState, setWaziState] = useState<WaziState>('resting');
   const [waziStatusText, setWaziStatusText] = useState<string>('WAZI');
   const [isListening, setIsListening] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  const [ttsViseme, setTtsViseme] = useState<number>(0);
   const [captionText, setCaptionText] = useState<string>("What would you like to understand, or show me?");
 
   // Conversation & Case State
@@ -62,19 +82,17 @@ export const App: React.FC = () => {
 
   const [activeCase, setActiveCase] = useState<CivicCase>(FLAGSHIP_CASE);
   const [savedCases, setSavedCases] = useState<CivicCase[]>([]);
-  const [settings, setSettings] = useState<AppSettings>(loadSettings);
 
   // Modals & Panels
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Evidence Verification State
   const [isSearching, setIsSearching] = useState(false);
   const [searchSteps, setSearchSteps] = useState<SearchStep[]>([]);
   const [isCheckingAgain, setIsCheckingAgain] = useState(false);
-
-  const speechRecognitionRef = useRef<any>(null);
 
   // Initialize data and sounds on mount
   useEffect(() => {
@@ -96,6 +114,42 @@ export const App: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  useEffect(() => {
+    if (liveAudioError) {
+      showToast(liveAudioError);
+      setIsListening(false);
+      setWaziState('error'); // Use explicitly added error state
+    }
+  }, [liveAudioError]);
+
+  // Sync Live Audio state to UI character state
+  useEffect(() => {
+    if (isConnected) {
+      setWaziState(liveWaziState);
+    }
+  }, [isConnected, liveWaziState]);
+
+  // Connection Toast
+  useEffect(() => {
+    if (isConnected) {
+      showToast("Live Session Connected");
+    }
+  }, [isConnected]);
+
+  // Hardware Back Button (Mobile) Resilience
+  useEffect(() => {
+    const handlePopState = () => {
+      if (currentView !== 'home') {
+        setCurrentView('home');
+      }
+    };
+    if (currentView !== 'home') {
+      window.history.pushState({ view: currentView }, '', '');
+    }
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentView]);
+
   // Speak a message with WAZI animation and sound
   const speakAsWazi = (text: string, onDone?: () => void) => {
     setCaptionText(text);
@@ -107,7 +161,13 @@ export const App: React.FC = () => {
       () => setWaziState('speaking'),
       () => {
         setWaziState('resting');
+        setTtsViseme(0);
         onDone?.();
+      },
+      () => {
+        // Pseudo-random viseme energy on syllable boundaries
+        setTtsViseme(0.3 + Math.random() * 0.7);
+        setTimeout(() => setTtsViseme(0), 100);
       }
     );
   };
@@ -125,6 +185,13 @@ export const App: React.FC = () => {
     setIsThinking(true);
     setWaziState('thinking');
 
+    // Route to Gemini Live session if connected
+    if (isConnected) {
+      sendTextPrompt(queryText);
+      setIsThinking(false);
+      return;
+    }
+
     // If query matches the health centre issue, trigger the flagship demonstration
     const lower = queryText.toLowerCase();
     if (lower.includes('health centre') || lower.includes('completed') || lower.includes('look at') || lower.includes('what is here')) {
@@ -138,62 +205,22 @@ export const App: React.FC = () => {
       return;
     }
 
-    // General civic response
+    // General civic response (REST fallback)
     const response = await geminiClient.respondToUser(queryText);
     setIsThinking(false);
     speakAsWazi(response);
   };
 
-  // Start / Stop Web Speech Recognition
-  const toggleListening = () => {
-    if (isListening) {
-      if (speechRecognitionRef.current) {
-        speechRecognitionRef.current.stop();
-      }
+  // Start / Stop Live Audio WebSocket
+  const toggleListening = async () => {
+    if (isConnected) {
+      disconnect();
       setIsListening(false);
-      setWaziState('resting');
-      return;
-    }
-
-    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRec) {
-      showToast('Speech recognition not available. Please type your message.');
-      return;
-    }
-
-    try {
+      sounds.playActionComplete();
+    } else {
       sounds.playListeningStart();
-      const rec = new SpeechRec();
-      rec.continuous = false;
-      rec.interimResults = false;
-      rec.lang = 'en-NG'; // Nigerian English locale by default
-
-      rec.onstart = () => {
-        setIsListening(true);
-        setWaziState('listening');
-      };
-
-      rec.onresult = (e: any) => {
-        const transcript = e.results[0][0].transcript;
-        handleUserQuery(transcript);
-      };
-
-      rec.onerror = () => {
-        setIsListening(false);
-        setWaziState('resting');
-      };
-
-      rec.onend = () => {
-        setIsListening(false);
-        if (waziState === 'listening') setWaziState('resting');
-      };
-
-      speechRecognitionRef.current = rec;
-      rec.start();
-    } catch (err) {
-      console.error('Speech recognition error:', err);
-      setIsListening(false);
-      setWaziState('resting');
+      await connect();
+      setIsListening(true);
     }
   };
 
@@ -262,14 +289,22 @@ export const App: React.FC = () => {
             <PrivacyShield isMicActive={isListening} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              <LanguagePill
-                currentLang={settings.language}
-                onSelectLanguage={(lang) => {
-                  const updated = saveSettings({ language: lang });
-                  setSettings(updated);
-                  showToast(`Language set to ${lang}`);
+              {/* Replace LanguagePill with a button to open modal, or just make LanguagePill trigger the modal */}
+              <button
+                onClick={() => setIsLanguageModalOpen(true)}
+                style={{
+                  background: 'var(--midnight-ink-80)',
+                  border: '1px solid var(--midnight-ink-70)',
+                  borderRadius: '20px',
+                  padding: '6px 12px',
+                  color: 'var(--warm-paper)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
                 }}
-              />
+              >
+                {settings.language}
+              </button>
 
               <button
                 onClick={() => setIsSettingsOpen(true)}
@@ -323,15 +358,17 @@ export const App: React.FC = () => {
               <WaziCharacter
                 state={waziState}
                 size={160}
+                micLevel={micLevel}
+                speakerLevel={Math.max(speakerLevel, ttsViseme)}
                 onClick={() => speakAsWazi("I'm listening. Speak or show me what is happening.")}
               />
 
               {/* Live Captions & Suggestions */}
               <Transcript
                 items={transcripts}
-                waziCaption={captionText}
+                waziCaption={isListening ? "WAZI is listening..." : captionText}
                 isThinking={isThinking}
-                onQuickPrompt={(prompt) => handleUserQuery(prompt)}
+                onQuickPrompt={handleUserQuery}
               />
             </div>
 
@@ -443,6 +480,17 @@ export const App: React.FC = () => {
             setSavedCases(INITIAL_SAVED_CASES);
             setActiveCase(FLAGSHIP_CASE);
             showToast('Reset to flagship demo case');
+          }}
+        />
+
+        <LanguageSelectorModal
+          isOpen={isLanguageModalOpen}
+          currentLang={settings.language}
+          onClose={() => setIsLanguageModalOpen(false)}
+          onSelectLanguage={(lang) => {
+            const updated = saveSettings({ ...settings, language: lang });
+            setSettings(updated);
+            showToast(`Language set to ${lang}`);
           }}
         />
 

@@ -46,20 +46,22 @@ export const CameraModal: React.FC<CameraModalProps> = ({
   const handleLoadDemoSignboard = async () => {
     setIsProcessing(true);
     // Create high-res synthetic SVG rendering of the actual Akute PHC Project signboard
-    const svgSignboard = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380">
-      <rect width="600" height="380" fill="%23071820" rx="8"/>
-      <rect x="15" y="15" width="570" height="350" fill="%23F7F3E8" stroke="%231E3A4A" stroke-width="4" rx="6"/>
-      <rect x="25" y="25" width="550" height="60" fill="%23132D3C" rx="4"/>
-      <text x="300" y="55" fill="%2316C6B1" font-family="sans-serif" font-size="20" font-weight="bold" text-anchor="middle">FEDERAL GOVERNMENT OF NIGERIA</text>
-      <text x="300" y="75" fill="%23F7F3E8" font-family="sans-serif" font-size="13" text-anchor="middle">NATIONAL PRIMARY HEALTH CARE DEVELOPMENT AGENCY (NPHCDA)</text>
-      <text x="40" y="125" fill="%231A1A1A" font-family="sans-serif" font-size="16" font-weight="bold">PROJECT: REHABILITATION & EQUIPPING OF MODEL PHC</text>
-      <text x="40" y="160" fill="%232E2E2E" font-family="sans-serif" font-size="14">CONTRACT REF: NPHCDA/2023/LOT-14</text>
-      <text x="40" y="195" fill="%232E2E2E" font-family="sans-serif" font-size="14">LOCATION: AKUTE WARD, IFO LGA, OGUN STATE</text>
-      <text x="40" y="230" fill="%232E2E2E" font-family="sans-serif" font-size="14">CONTRACTOR: APEX GLOBAL ALLIED WORKS LTD (RC-1489201)</text>
-      <text x="40" y="265" fill="%232E2E2E" font-family="sans-serif" font-size="14">CLIENT: DEPT OF PRIMARY HEALTH CARE SYSTEMS, GARKI ABUJA</text>
-      <rect x="40" y="295" width="520" height="40" fill="%234BCB91" fill-opacity="0.2" stroke="%234BCB91" stroke-width="2" rx="4"/>
-      <text x="300" y="320" fill="%230B7A6E" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="middle">CLAIMED STATUS: 100% COMPLETED & COMMISSIONED</text>
+    const rawSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380">
+      <rect width="600" height="380" fill="#071820" rx="8"/>
+      <rect x="15" y="15" width="570" height="350" fill="#F7F3E8" stroke="#1E3A4A" stroke-width="4" rx="6"/>
+      <rect x="25" y="25" width="550" height="60" fill="#132D3C" rx="4"/>
+      <text x="300" y="55" fill="#16C6B1" font-family="sans-serif" font-size="20" font-weight="bold" text-anchor="middle">FEDERAL GOVERNMENT OF NIGERIA</text>
+      <text x="300" y="75" fill="#F7F3E8" font-family="sans-serif" font-size="13" text-anchor="middle">NATIONAL PRIMARY HEALTH CARE DEVELOPMENT AGENCY (NPHCDA)</text>
+      <text x="40" y="125" fill="#1A1A1A" font-family="sans-serif" font-size="16" font-weight="bold">PROJECT: REHABILITATION &amp; EQUIPPING OF MODEL PHC</text>
+      <text x="40" y="160" fill="#2E2E2E" font-family="sans-serif" font-size="14">CONTRACT REF: NPHCDA/2023/LOT-14</text>
+      <text x="40" y="195" fill="#2E2E2E" font-family="sans-serif" font-size="14">LOCATION: AKUTE WARD, IFO LGA, OGUN STATE</text>
+      <text x="40" y="230" fill="#2E2E2E" font-family="sans-serif" font-size="14">CONTRACTOR: APEX GLOBAL ALLIED WORKS LTD (RC-1489201)</text>
+      <text x="40" y="265" fill="#2E2E2E" font-family="sans-serif" font-size="14">CLIENT: DEPT OF PRIMARY HEALTH CARE SYSTEMS, GARKI ABUJA</text>
+      <rect x="40" y="295" width="520" height="40" fill="#4BCB91" fill-opacity="0.2" stroke="#4BCB91" stroke-width="2" rx="4"/>
+      <text x="300" y="320" fill="#0B7A6E" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="middle">CLAIMED STATUS: 100% COMPLETED &amp; COMMISSIONED</text>
     </svg>`;
+
+    const svgSignboard = `data:image/svg+xml;base64,${btoa(rawSvg)}`;
 
     setImagePreview(svgSignboard);
     const clues = await geminiClient.extractCluesFromImage(svgSignboard);

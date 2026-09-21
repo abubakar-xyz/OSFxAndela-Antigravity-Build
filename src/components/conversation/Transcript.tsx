@@ -1,8 +1,14 @@
 /* WAZI Civic — Live Captions & Conversation Display */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { TranscriptItem } from '../../lib/types';
 import { Sparkles } from 'lucide-react';
+
+const QUICK_PROMPTS = [
+  "They said this health centre was completed, but look at what's here.",
+  "Wetin be my rights to check public project records?",
+  "This road contract — how much dem budget, and wetin happen?"
+];
 
 interface TranscriptProps {
   items: TranscriptItem[];
@@ -18,12 +24,20 @@ export const Transcript: React.FC<TranscriptProps> = ({
   onQuickPrompt
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [promptIndex, setPromptIndex] = useState(0);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [items, waziCaption, isThinking]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPromptIndex((prev) => (prev + 1) % QUICK_PROMPTS.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
 
   const latestWaziItem = items.filter(i => i.speaker === 'wazi').slice(-1)[0];
   const activeCaption = waziCaption || (latestWaziItem ? latestWaziItem.text : "What would you like to understand, or show me?");
@@ -49,15 +63,15 @@ export const Transcript: React.FC<TranscriptProps> = ({
         style={{
           fontSize: 'var(--text-md)',
           fontWeight: 'var(--weight-medium)',
-          color: 'var(--warm-paper)',
+          color: 'var(--neutral-10)',
           lineHeight: 'var(--leading-relaxed)',
           maxWidth: '380px',
           animation: 'fade-in 0.3s ease-out'
         }}
       >
         {isThinking ? (
-          <span style={{ color: 'var(--sun-amber)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <Sparkles size={16} /> Thinking and checking civic records...
+          <span style={{ color: 'var(--neutral-40)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Sparkles size={16} color="var(--luminous-teal)" /> Thinking and checking civic records...
           </span>
         ) : (
           activeCaption
@@ -68,7 +82,7 @@ export const Transcript: React.FC<TranscriptProps> = ({
       {items.length <= 1 && onQuickPrompt && (
         <div style={{ marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           <button
-            onClick={() => onQuickPrompt("They said this health centre was completed, but look at what is here.")}
+            onClick={() => onQuickPrompt(QUICK_PROMPTS[promptIndex])}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -87,10 +101,13 @@ export const Transcript: React.FC<TranscriptProps> = ({
             }}
           >
             <Sparkles size={14} style={{ flexShrink: 0 }} />
-            <span>"They said this health centre was completed, but look at what's here."</span>
+            <span key={promptIndex} style={{ animation: 'fade-in 0.3s ease-out' }}>
+              "{QUICK_PROMPTS[promptIndex]}"
+            </span>
           </button>
         </div>
       )}
     </div>
   );
 };
+

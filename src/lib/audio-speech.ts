@@ -131,11 +131,23 @@ class SoundPlayer {
 
 export const sounds = new SoundPlayer();
 
-// Speech Synthesis Helper
+// Cold Start Optimization: Eagerly load voices in module scope
+let availableVoices: SpeechSynthesisVoice[] = [];
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  // Initialize voices immediately if already available
+  availableVoices = window.speechSynthesis.getVoices();
+  // Listen for voiceschanged to update the list when they load asynchronously
+  window.speechSynthesis.onvoiceschanged = () => {
+    availableVoices = window.speechSynthesis.getVoices();
+  };
+}
+
+// Speech Synthesis Helper with Viseme support
 export function speakWazi(
   text: string,
   onStart?: () => void,
-  onEnd?: () => void
+  onEnd?: () => void,
+  onBoundary?: (e: SpeechSynthesisEvent) => void
 ): () => void {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
     onStart?.();
@@ -148,15 +160,15 @@ export function speakWazi(
   utterance.rate = 1.0;
   utterance.pitch = 1.05;
 
-  // Prefer natural English voices if available
-  const voices = window.speechSynthesis.getVoices();
-  const englishVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha')));
+  // Prefer natural English voices if available (uses cached availableVoices)
+  const englishVoice = availableVoices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha')));
   if (englishVoice) {
     utterance.voice = englishVoice;
   }
 
   if (onStart) utterance.onstart = onStart;
   if (onEnd) utterance.onend = onEnd;
+  if (onBoundary) utterance.onboundary = onBoundary;
   utterance.onerror = () => onEnd?.();
 
   window.speechSynthesis.speak(utterance);

@@ -30,7 +30,7 @@ export const ClueChips: React.FC<ClueChipsProps> = ({
 
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', margin: 'var(--space-2) 0' }}>
-      {clues.map((clue) => {
+      {clues.map((clue, index) => {
         const isEditing = editingId === clue.id;
 
         return (
@@ -41,7 +41,10 @@ export const ClueChips: React.FC<ClueChipsProps> = ({
               padding: isEditing ? '2px 8px' : '4px 10px',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '6px',
+              animation: `slide-up 0.5s ease-out forwards`,
+              animationDelay: `${index * 0.15}s`,
+              opacity: 0
             }}
           >
             <span className="clue-chip__label">{clue.label}:</span>

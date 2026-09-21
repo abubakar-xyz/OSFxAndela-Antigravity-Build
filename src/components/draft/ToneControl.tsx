@@ -25,17 +25,14 @@ export const ToneControl: React.FC<ToneControlProps> = ({
       }}
     >
       {/* Tone Segmented Control */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-60)', fontWeight: 'var(--weight-medium)' }}>
-          Document Tone:
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-mono)' }}>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-60)', fontWeight: 'var(--weight-medium)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wider)' }}>
+          Tone
         </span>
         <div
           style={{
             display: 'inline-flex',
-            background: 'var(--warm-paper-90)',
-            padding: '2px',
-            borderRadius: 'var(--radius-full)',
-            border: '1px solid var(--warm-paper-80)'
+            border: '1px solid var(--midnight-ink-70)'
           }}
         >
           {(['neutral', 'firm', 'conciliatory'] as const).map((t) => (
@@ -43,17 +40,18 @@ export const ToneControl: React.FC<ToneControlProps> = ({
               key={t}
               onClick={() => onChangeTone(t)}
               style={{
-                padding: '3px 10px',
-                borderRadius: 'var(--radius-full)',
+                padding: '4px 12px',
                 border: 'none',
-                background: tone === t ? 'var(--neutral-100)' : 'transparent',
-                color: tone === t ? 'var(--neutral-10)' : 'var(--neutral-40)',
+                borderRight: t !== 'conciliatory' ? '1px solid var(--midnight-ink-70)' : 'none',
+                background: tone === t ? 'var(--midnight-ink-70)' : 'transparent',
+                color: tone === t ? 'var(--warm-paper)' : 'var(--neutral-40)',
+                fontFamily: 'var(--font-mono)',
                 fontSize: 'var(--text-2xs)',
                 fontWeight: 'var(--weight-semibold)',
                 cursor: 'pointer',
-                textTransform: 'capitalize',
+                textTransform: 'uppercase',
                 transition: 'all var(--duration-fast)',
-                boxShadow: tone === t ? 'var(--shadow-xs)' : 'none'
+                boxShadow: 'none'
               }}
             >
               {t}
@@ -63,17 +61,14 @@ export const ToneControl: React.FC<ToneControlProps> = ({
       </div>
 
       {/* Length Segmented Control */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-60)', fontWeight: 'var(--weight-medium)' }}>
-          Document Length:
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-mono)' }}>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-60)', fontWeight: 'var(--weight-medium)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wider)' }}>
+          Length
         </span>
         <div
           style={{
             display: 'inline-flex',
-            background: 'var(--warm-paper-90)',
-            padding: '2px',
-            borderRadius: 'var(--radius-full)',
-            border: '1px solid var(--warm-paper-80)'
+            border: '1px solid var(--midnight-ink-70)'
           }}
         >
           {(['concise', 'standard', 'detailed'] as const).map((l) => (
@@ -81,17 +76,18 @@ export const ToneControl: React.FC<ToneControlProps> = ({
               key={l}
               onClick={() => onChangeLength(l)}
               style={{
-                padding: '3px 10px',
-                borderRadius: 'var(--radius-full)',
+                padding: '4px 12px',
                 border: 'none',
-                background: length === l ? 'var(--neutral-100)' : 'transparent',
-                color: length === l ? 'var(--neutral-10)' : 'var(--neutral-40)',
+                borderRight: l !== 'detailed' ? '1px solid var(--midnight-ink-70)' : 'none',
+                background: length === l ? 'var(--midnight-ink-70)' : 'transparent',
+                color: length === l ? 'var(--warm-paper)' : 'var(--neutral-40)',
+                fontFamily: 'var(--font-mono)',
                 fontSize: 'var(--text-2xs)',
                 fontWeight: 'var(--weight-semibold)',
                 cursor: 'pointer',
-                textTransform: 'capitalize',
+                textTransform: 'uppercase',
                 transition: 'all var(--duration-fast)',
-                boxShadow: length === l ? 'var(--shadow-xs)' : 'none'
+                boxShadow: 'none'
               }}
             >
               {l}

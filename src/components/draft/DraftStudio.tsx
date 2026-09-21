@@ -7,6 +7,7 @@ import { applyDisclosureToDraft } from '../../lib/privacy';
 import { FormatSelector } from './FormatSelector';
 import { ToneControl } from './ToneControl';
 import { DisclosureSheet } from './DisclosureSheet';
+import { EmailDispatchSheet } from './EmailDispatchSheet';
 import { WaziCompanion } from '../wazi/WaziCompanion';
 import confetti from 'canvas-confetti';
 import {
@@ -16,7 +17,8 @@ import {
   Shield,
   CheckCircle2,
   AlertOctagon,
-  Printer
+  Printer,
+  ExternalLink
 } from 'lucide-react';
 
 interface DraftStudioProps {
@@ -47,6 +49,7 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
   const [editableBody, setEditableBody] = useState<string>('');
   const [disclosureSettings, setDisclosureSettings] = useState<DisclosureSettings>(civicCase.disclosure);
   const [isDisclosureOpen, setIsDisclosureOpen] = useState(false);
+  const [isEmailSheetOpen, setIsEmailSheetOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
   // Re-generate base draft when format or tone changes
@@ -78,11 +81,42 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
   };
 
   const handleOpenEmailClient = () => {
-    const subject = encodeURIComponent(draft.subject);
-    const body = encodeURIComponent(editableBody);
-    const mailto = `mailto:${draft.recipientRoute}?subject=${subject}&body=${body}`;
-    window.open(mailto, '_blank');
-    onShowToast('Opened email client with verified recipient');
+    setIsEmailSheetOpen(true);
+  };
+
+  const handleDownloadHtml = () => {
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6; color: #333; }
+          .header { text-align: center; margin-bottom: 40px; }
+          .subject { font-weight: bold; margin-bottom: 20px; }
+          .body { white-space: pre-wrap; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${civicCase.route?.agency || 'Civic Request'}</h1>
+          <p>For the attention of: ${civicCase.route?.role || 'Accounting Officer'}</p>
+        </div>
+        <div class="subject">Subject: ${draft.subject}</div>
+        <div class="body">${editableBody}</div>
+      </body>
+      </html>
+    `;
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `wazi_draft_${civicCase.id}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    onShowToast('Downloaded HTML document');
   };
 
   const handleSimulatedSubmit = () => {
@@ -252,34 +286,49 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
         </button>
       </div>
 
-      {/* WYSIWYG Document Editor Surface */}
+      {/* WYSIWYG Document Editor Surface - A4 Letterhead Style */}
       <div
         style={{
           background: '#FFFFFF',
-          border: '1px solid var(--warm-paper-80)',
-          borderRadius: 'var(--radius-md)',
-          boxShadow: 'var(--shadow-md)',
-          padding: 'var(--space-4)',
-          position: 'relative'
+          border: '1px solid #E5E7EB',
+          borderRadius: '2px', // Sharper corners for a paper look
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 0 0 1px rgba(255,255,255,1)',
+          padding: '40px 32px', // Mimic paper margins
+          position: 'relative',
+          maxWidth: '800px',
+          margin: '0 auto',
+          color: '#111827', // Darker ink color for contrast on white
+          aspectRatio: '1 / 1.414', // A4 aspect ratio approximation (optional, might be too tall)
+          minHeight: '600px'
         }}
       >
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-60)', fontWeight: 'var(--weight-semibold)', marginBottom: 'var(--space-2)' }}>
+        {/* Letterhead Header */}
+        <div style={{ textAlign: 'center', marginBottom: '32px', paddingBottom: '16px', borderBottom: '2px solid #E5E7EB' }}>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1F2937', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {route?.agency || 'Civic Document'}
+          </h2>
+          <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6B7280' }}>
+            Attn: {route?.role || 'Accounting Officer'}
+          </p>
+        </div>
+
+        <div style={{ fontSize: '15px', color: '#111827', fontWeight: 700, marginBottom: '24px' }}>
           Subject: {draft.subject}
         </div>
 
         <textarea
           value={editableBody}
           onChange={(e) => setEditableBody(e.target.value)}
-          rows={16}
           style={{
             width: '100%',
+            height: '400px',
             border: 'none',
             outline: 'none',
-            resize: 'vertical',
+            resize: 'none',
             fontFamily: selectedFormat === 'whatsapp' ? 'var(--font-primary)' : 'var(--font-primary)',
-            fontSize: 'var(--text-sm)',
-            lineHeight: 'var(--leading-relaxed)',
-            color: 'var(--neutral-10)',
+            fontSize: '15px',
+            lineHeight: '1.7',
+            color: '#374151',
             background: 'transparent',
             boxSizing: 'border-box'
           }}
@@ -306,7 +355,7 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
         )}
       </div>
 
-      {/* Action Strip: Copy, Print/PDF, Mail, Submit */}
+      {/* Action Strip: Copy, Print, HTML, Mail, Submit */}
       <div
         style={{
           display: 'grid',
@@ -328,7 +377,16 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
           className="btn btn--outline-dark"
         >
           <Printer size={16} />
-          <span>Print / PDF</span>
+          <span>Print Document</span>
+        </button>
+
+        <button
+          onClick={handleDownloadHtml}
+          className="btn btn--outline-dark"
+          style={{ gridColumn: '1 / -1' }}
+        >
+          <ExternalLink size={16} />
+          <span>Download as HTML</span>
         </button>
 
         <button
@@ -354,6 +412,14 @@ export const DraftStudio: React.FC<DraftStudioProps> = ({
         settings={disclosureSettings}
         onClose={() => setIsDisclosureOpen(false)}
         onUpdateSettings={handleUpdateDisclosure}
+      />
+
+      <EmailDispatchSheet
+        isOpen={isEmailSheetOpen}
+        draft={draft}
+        editableBody={editableBody}
+        onClose={() => setIsEmailSheetOpen(false)}
+        onShowToast={onShowToast}
       />
     </div>
   );

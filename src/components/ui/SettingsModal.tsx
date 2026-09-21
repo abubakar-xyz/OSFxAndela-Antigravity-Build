@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { saveSettings } from '../../lib/storage';
 import type { AppSettings } from '../../lib/storage';
 import { Settings, Volume2, VolumeX, Wifi, Key, RotateCcw, X, Check } from 'lucide-react';
+import { InteractiveVoiceRoller } from './InteractiveVoiceRoller';
 import { INITIAL_SAVED_CASES } from '../../lib/demo-fixtures';
 import { saveCases } from '../../lib/storage';
 
@@ -25,14 +26,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [apiKey, setApiKey] = useState(settings.apiKey || '');
   const [lowData, setLowData] = useState(settings.lowDataMode);
   const [sound, setSound] = useState(settings.soundEnabled);
+  const [voiceName, setVoiceName] = useState(settings.voiceName || 'Kore');
 
   if (!isOpen) return null;
 
   const handleSave = () => {
     const updated = saveSettings({
+      ...settings,
       apiKey: apiKey.trim() || undefined,
       lowDataMode: lowData,
-      soundEnabled: sound
+      soundEnabled: sound,
+      voiceName: voiceName
     });
     onUpdateSettings(updated);
     onClose();
@@ -72,6 +76,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         <div className="bottom-sheet__body">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <InteractiveVoiceRoller 
+                currentVoiceId={voiceName} 
+                onSelectVoice={setVoiceName} 
+              />
+            </div>
+
             {/* Low-data Mode */}
             <div
               style={{

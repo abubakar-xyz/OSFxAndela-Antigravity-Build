@@ -24,13 +24,14 @@ export const WaziCompanion: React.FC<WaziCompanionProps> = ({
         display: 'inline-flex',
         alignItems: 'center',
         gap: 'var(--space-2)',
-        background: 'rgba(7, 24, 32, 0.08)',
-        border: '1px solid var(--warm-paper-80)',
-        borderRadius: 'var(--radius-full)',
-        padding: '3px 12px 3px 4px',
+        background: 'rgba(7, 24, 32, 0.04)',
+        border: '1px solid var(--midnight-ink-70)',
+        borderRadius: '0',
+        padding: '2px 10px 2px 2px',
         cursor: 'pointer',
         transition: 'all var(--duration-fast)',
-        WebkitTapHighlightColor: 'transparent'
+        WebkitTapHighlightColor: 'transparent',
+        fontFamily: 'var(--font-mono)'
       }}
     >
       <WaziCharacter state={state} size={36} />

@@ -9,11 +9,15 @@ export interface GeminiConfig {
 
 export class GeminiCivicClient {
   private apiKey: string;
-  private model: string;
+  private conversationalModel: string;
+  private draftingModel: string;
 
   constructor() {
     this.apiKey = (import.meta as unknown as { env: Record<string, string> }).env?.VITE_GEMINI_API_KEY || '';
-    this.model = 'gemini-3.8-flash';
+    // Use the official Gemini 2.0 Flash model (capable of Live API bidirectional streaming)
+    this.conversationalModel = 'gemini-2.0-flash-exp';
+    // Use the new Flash-Lite model for high-speed drafting tasks
+    this.draftingModel = 'gemini-2.0-flash-lite-preview-02-05';
   }
 
   public setApiKey(key: string): void {
@@ -30,7 +34,7 @@ export class GeminiCivicClient {
   public async extractCluesFromImage(base64Image: string): Promise<ExtractedClue[]> {
     if (this.hasApiKey()) {
       try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.draftingModel}:generateContent?key=${this.apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -93,25 +97,36 @@ export class GeminiCivicClient {
   public async respondToUser(userQuery: string): Promise<string> {
     const q = userQuery.toLowerCase();
 
-    if (q.includes('health centre') || q.includes('completed') || q.includes('look at') || q.includes('hospital') || q.includes('clinic')) {
-      return "I can see the signboard and the site. Official procurement records show this project was certified 100% completed, but the photograph shows an uncompleted shell. Let's examine the Record vs Reality comparison.";
-    }
-
-    if (q.includes('check again') || q.includes('contradict') || q.includes('recheck') || q.includes('sure')) {
-      return "I performed an adversarial check across subsequent contract phases and cadastral registry records. The discrepancy holds firmly. The records claim completion, while the physical site is unroofed.";
-    }
-
-    if (q.includes('action') || q.includes('who') || q.includes('report') || q.includes('office') || q.includes('contact')) {
-      return "The responsible authority is the National Primary Health Care Development Agency. I have verified their public complaints route and FOI officer. Would you like me to prepare an official FOI inquiry or complaint petition?";
-    }
-
-    if (q.includes('foi') || q.includes('letter') || q.includes('draft') || q.includes('write')) {
-      return "I have opened Draft Studio with a formal Freedom of Information request citing Section 2(3) of the FOI Act 2011, complete with your evidence citations.";
+    if (!this.hasApiKey()) {
+      return "⚠️ **API Key Missing (Demo Mode):** I am currently running in a hardcoded fallback mode because the Gemini API key is missing. Please add your VITE_GEMINI_API_KEY to the .env file to enable my dynamic personality and live voice capabilities.";
     }
 
     if (this.hasApiKey()) {
       try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`, {
+        let modeInstruction = "";
+        if (q.includes("danger") || q.includes("emergency") || q.includes("police") || q.includes("hospital")) {
+          modeInstruction = "[MODE: SAFETY FIRST] Immediately provide emergency numbers (112, 199, NEMA). Advise safety. Do NOT investigate civic records.";
+        } else if (q.includes("budget") || q.includes("contract") || q.includes("money") || q.includes("award")) {
+          modeInstruction = "[MODE: ACCOUNTABILITY] Adopt a calm, factual, evidence-first tone. Focus on numbers, dates, and official processes.";
+        } else {
+          modeInstruction = "[MODE: COMPANION] Warm, street-smart companion tone. Use Nigerian English/Pidgin naturally.";
+        }
+
+        const promptText = `
+You are WAZI — a warm, sharp-eyed, street-smart civic companion built for African communities.
+PERSONALITY & VOICE:
+- Speak in natural Nigerian English sprinkled with Pidgin warmth ("Omo", "Ah!", "Abeg", "No shaking", "Wetin happen").
+- You adapt to the speaker's energy.
+- Proactive turn-taking: always ask ONE follow-up question.
+- Maximum 1-2 short punchy sentences. Never monologue.
+- Never give legal counsel or make unverified corruption claims.
+
+${modeInstruction}
+
+User said: "${userQuery}"
+`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.conversationalModel}:generateContent?key=${this.apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -119,7 +134,7 @@ export class GeminiCivicClient {
               {
                 parts: [
                   {
-                    text: `You are WAZI, a warm, observant, concise African civic companion. Speak in maximum 2-3 short sentences. Never give legal counsel or make unverified corruption claims. User said: "${userQuery}"`
+                    text: promptText
                   }
                 ]
               }

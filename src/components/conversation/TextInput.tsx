@@ -40,22 +40,25 @@ export const TextInput: React.FC<TextInputProps> = ({
       <button
         type="button"
         onClick={onOpenCamera}
+        disabled={disabled}
         aria-label="Open camera or show photo to WAZI"
         title="Show signboard or site photo"
         style={{
           width: '46px',
           height: '46px',
           borderRadius: 'var(--radius-full)',
-          background: 'var(--midnight-ink-80)',
-          border: '1px solid var(--midnight-ink-70)',
-          color: 'var(--luminous-teal)',
+          background: '#ffffff',
+          border: '1px solid var(--warm-paper-80)',
+          color: 'var(--luminous-teal-dim)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.5 : 1,
           flexShrink: 0,
           transition: 'all var(--duration-fast)',
-          WebkitTapHighlightColor: 'transparent'
+          WebkitTapHighlightColor: 'transparent',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
         }}
       >
         <Camera size={22} />
@@ -66,11 +69,12 @@ export const TextInput: React.FC<TextInputProps> = ({
           flex: 1,
           display: 'flex',
           alignItems: 'center',
-          background: 'var(--midnight-ink-90)',
-          border: '1px solid var(--midnight-ink-70)',
+          background: '#ffffff',
+          border: '1px solid var(--warm-paper-80)',
           borderRadius: 'var(--radius-full)',
           padding: '0 4px 0 16px',
-          height: '46px'
+          height: '46px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
         }}
       >
         <input
@@ -84,7 +88,7 @@ export const TextInput: React.FC<TextInputProps> = ({
             background: 'transparent',
             border: 'none',
             outline: 'none',
-            color: 'var(--warm-paper)',
+            color: 'var(--neutral-10)',
             fontSize: 'var(--text-sm)'
           }}
         />

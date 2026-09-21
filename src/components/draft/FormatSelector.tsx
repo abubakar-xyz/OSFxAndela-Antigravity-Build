@@ -41,17 +41,19 @@ export const FormatSelector: React.FC<FormatSelectorProps> = ({
               alignItems: 'center',
               gap: '6px',
               padding: '6px 14px',
-              borderRadius: 'var(--radius-full)',
+              borderRadius: '0',
               border: '1px solid',
-              borderColor: isActive ? 'var(--midnight-ink)' : 'var(--warm-paper-80)',
-              backgroundColor: isActive ? 'var(--midnight-ink)' : 'var(--neutral-100)',
-              color: isActive ? 'var(--warm-paper)' : 'var(--neutral-20)',
-              fontSize: 'var(--text-xs)',
+              borderColor: isActive ? 'var(--midnight-ink-70)' : 'var(--midnight-ink-70)',
+              backgroundColor: isActive ? 'var(--midnight-ink-70)' : 'transparent',
+              color: isActive ? 'var(--warm-paper)' : 'var(--neutral-40)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 'var(--text-2xs)',
               fontWeight: 'var(--weight-semibold)',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
+              textTransform: 'uppercase',
               transition: 'all var(--duration-fast)',
-              boxShadow: isActive ? 'var(--shadow-xs)' : 'none'
+              boxShadow: 'none'
             }}
           >
             {fmt.icon}

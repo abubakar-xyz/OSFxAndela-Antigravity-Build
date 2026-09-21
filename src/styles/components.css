@@ -18,21 +18,43 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  background-color: var(--midnight-ink);
+  background-color: var(--warm-paper);
+  color: var(--neutral-10);
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.4);
-  transition: background-color var(--duration-slow) var(--ease-out);
+  transition: background-color var(--duration-slow) var(--ease-out), max-width var(--duration-normal) var(--ease-out);
+}
+
+@media (min-width: 768px) {
+  .mobile-shell {
+    max-width: 600px;
+    min-height: 90vh;
+    margin: 5vh auto;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--warm-paper-80);
+    overflow: hidden;
+  }
 }
 
 .mobile-shell.workspace-mode {
-  background-color: var(--warm-paper);
-  color: var(--neutral-10);
   max-width: var(--width-workspace);
+}
+
+@media (min-width: 768px) {
+  .mobile-shell.workspace-mode {
+    max-width: 900px;
+  }
 }
 
 .mobile-shell.draft-mode {
   background-color: var(--neutral-100);
   color: var(--neutral-10);
   max-width: var(--width-workspace);
+}
+
+@media (min-width: 768px) {
+  .mobile-shell.draft-mode {
+    max-width: 900px;
+  }
 }
 
 /* Header Bar */
@@ -158,10 +180,10 @@
 /* Card Component */
 .card {
   background: var(--neutral-100);
-  border: 1px solid var(--warm-paper-80);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--midnight-ink-70);
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   color: var(--neutral-10);
 }
 
@@ -310,7 +332,7 @@
 
 .comparison-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.3fr 1fr; /* Asymmetric balance */
   gap: var(--space-3);
   margin-top: var(--space-2);
 }
@@ -420,9 +442,12 @@
 .bottom-sheet {
   width: 100%;
   max-width: var(--width-workspace);
-  background: var(--warm-paper);
-  border-top-left-radius: var(--radius-xl);
-  border-top-right-radius: var(--radius-xl);
+  background: rgba(247, 243, 232, 0.92); /* Translucent var(--warm-paper) */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--midnight-ink-70);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
   max-height: 88dvh;
   overflow-y: auto;
   box-shadow: var(--shadow-xl);

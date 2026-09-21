@@ -55,15 +55,82 @@ Built for the **Andela x Open Society Foundations (OSF) 2026 Civic-Tech Hackatho
 
 - **Frontend**: React 19, TypeScript, Vite
 - **Styling**: Vanilla CSS Design Tokens, warm paper / midnight ink palette, WCAG AA contrast
+- **Voice**: **Gemini Live API** over WebSockets — a genuine duplex audio session (see below)
 - **AI & Multimodal**:
-  - **Gemini 3.8 Flash** with Google Search Grounding for structured evidence verification
+  - Gemini for signboard/photo clue extraction, proxied server-side
   - **Deterministic Civic Engine** for 100% offline, zero-latency reliability
-- **Audio & Speech**:
+- **Audio**:
   - Web Audio API crystal harmonic chimes (100% offline synthetic audio)
-  - Web Speech API (SpeechRecognition + SpeechSynthesis) with graceful text fallbacks
+  - PCM capture and streaming playback via `AudioWorklet` — **no Web Speech API**
 - **Data Sovereignty**:
   - HTML5 Canvas EXIF & hardware metadata stripping
   - Private client-side persistence (`localStorage` / `IndexedDB`)
+  - The Gemini API key lives only in the node proxy, never in the browser bundle
+
+---
+
+## 🎙️ The Voice Pipeline
+
+WAZI's voice is a real-time, two-way Gemini Live session. There is no
+text-to-speech fallback: `window.speechSynthesis` cannot match a speaker's
+language or accent, which is the whole point of the product.
+
+```
+  microphone
+      │  AudioWorklet, AudioContext @ 16 kHz
+      │  → 20 ms frames, Float32 → PCM16, transferred not copied
+      ▼
+  WebSocket  /live          binary frames = raw PCM16LE mono @16 kHz
+      │                      text frames  = JSON control messages
+      ▼
+  node proxy (server.js)    holds the API key; one Gemini session per socket
+      │  ai.live.connect() → BidiGenerateContent
+      ▼
+  Gemini Live               system instruction injected at `setup`:
+      │                       core identity + language mirroring + persona
+      │  24 kHz PCM, transcripts (both directions), tool calls
+      ▼
+  node proxy  ──────────►  WebSocket  ──────────►  browser
+      │
+      ▼
+  PcmPlayer @ 24 kHz        gapless scheduled queue
+      ├─► speakers
+      └─► AnalyserNode → requestAnimationFrame → RMS → avatar visemes
+```
+
+**Three properties worth knowing about:**
+
+1. **The language selector is a readout, not a setting.** Every session is
+   opened with an unconditional directive to mirror the speaker's language,
+   dialect, register and accent — including mid-conversation switches. When the
+   model is confident, it calls `note_detected_language` and the pill in the
+   header follows it. Speak Pidgin and WAZI answers in Pidgin, with no taps.
+
+2. **The mouth is driven by audio leaving the speakers,** not by chunks arriving
+   off the socket. An arriving chunk is queued behind everything before it, so
+   measuring it on arrival desyncs the avatar by the whole queue depth. An
+   `AnalyserNode` on the playback graph makes the level correct by construction.
+
+3. **The voice operates the interface.** Gemini function calls open the evidence
+   board, the camera, the draft studio and the safety banner — so the jump from
+   conversation to structured evidence works in any language, rather than from
+   an English keyword match.
+
+### Model selection
+
+Verified against the live API rather than taken from documentation. The Live API
+rejects an entire `setup` frame containing one unsupported field, so
+capabilities are gated per model in `server/live-models.js`:
+
+| Model | First audio | Tools | Affective dialog |
+|---|---|---|---|
+| `gemini-3.1-flash-live-preview` *(default)* | ~1.9s | ✅ | ❌ rejected |
+| `gemini-2.5-flash-native-audio-latest` | ~7.5s | ✅ | ✅ |
+| `gemini-3.8-live` | — | ❌ times out | ❌ rejected |
+
+Measured on a 5.1s Nigerian-Pidgin utterance. The chain falls through on
+failure; `GEMINI_LIVE_MODEL` moves a model to the front rather than replacing
+the chain, so a bad pin degrades instead of breaking voice.
 
 ---
 
@@ -87,17 +154,31 @@ Built for the **Andela x Open Society Foundations (OSF) 2026 Civic-Tech Hackatho
 │   │   ├── animations.css      # WAZI breathing, glow pulses, waveforms
 │   │   └── components.css      # Responsive cards, buttons, badges
 │   ├── lib/
+│   │   ├── audio/
+│   │   │   ├── MicCapture.ts   # 16kHz capture graph → PCM16 frames
+│   │   │   └── PcmPlayer.ts    # 24kHz gapless playback + viseme analyser
+│   │   ├── live-protocol.ts    # Browser half of the /live wire contract
 │   │   ├── types.ts            # Core TypeScript schemas
 │   │   ├── demo-fixtures.ts    # Hand-verified Akute PHC flagship case
 │   │   ├── evidence-engine.ts  # Verification & drafting logic
-│   │   ├── gemini-client.ts    # Gemini multimodal client
-│   │   ├── audio-speech.ts     # Web Audio synthetic chimes & speech
+│   │   ├── gemini-client.ts    # Proxied Gemini calls (holds no key)
+│   │   ├── audio-speech.ts     # Web Audio synthetic chimes (no speech synthesis)
 │   │   ├── privacy.ts          # EXIF stripping & disclosure filters
 │   │   └── storage.ts          # Case persistence & settings
 │   ├── data/jurisdictions/ng/  # Nigeria Country Pack (NOCOPO, Treasury, NPHCDA)
 │   ├── prompts/                # Prompt guidelines & state prompts
+│   ├── hooks/useLiveAudio.ts   # The live voice session, as one hook
 │   ├── App.tsx                 # Master state machine controller
 │   └── index.css               # Design system cascade entry
+├── server.js                   # Voice proxy, static host & API key custodian
+├── server/
+│   ├── wazi-identity.js        # Core identity, language mirroring, personas
+│   ├── live-models.js          # Verified model capability table & fallback
+│   ├── civic-tools.js          # Function declarations the voice can call
+│   └── live-bridge.js          # One browser socket ↔ one Gemini session
+└── scripts/
+    ├── verify-live.mjs         # Socket-level end-to-end voice verification
+    └── verify-browser.mjs      # Headless-browser pipeline verification
 ```
 
 ---
@@ -118,14 +199,51 @@ cd "OSFxAndela Antigravity Build"
 # Install dependencies
 npm install
 
-# (Optional) Add your Gemini API key in .env
+# Add your Gemini API key
 cp .env.example .env
+#   → set GEMINI_API_KEY=...   (NOT VITE_GEMINI_API_KEY — see below)
 
-# Run development server
-npm run dev
+# Run the UI and the voice proxy together
+npm run dev:all
 ```
 
-The application will be live at `http://localhost:5173/`.
+The UI is at `http://localhost:5173/` and the voice proxy at `:8080`. Vite
+forwards `/live` and `/api` to the proxy, so the browser only ever talks to one
+origin — which is also what lets you open the dev server from a phone on the
+same network and have voice work.
+
+For a production-style run, `npm run build && npm start` serves the built UI and
+the voice socket together from `:8080`.
+
+> **Why `GEMINI_API_KEY` and not `VITE_GEMINI_API_KEY`:** Vite inlines every
+> `VITE_`-prefixed variable into the shipped client bundle, publishing it to
+> anyone who opens devtools. The key belongs to the node process only. The
+> server still accepts the old name so existing `.env` files keep working, but
+> it warns when it has to.
+
+### Verifying the voice pipeline
+
+Two harnesses drive the real API, because a voice pipeline that compiles is not
+a voice pipeline that works:
+
+```bash
+npm run dev:server        # terminal 1
+
+npm run verify:live       # terminal 2 — drives /live with real 16kHz speech
+npm run build && npm run verify:browser   # drives the real app in Chromium
+```
+
+`verify:live` synthesises a Nigerian-Pidgin utterance, streams it as 16kHz PCM
+over the wire protocol, and asserts the transcription, the 24kHz audio coming
+back, that the reply mirrors the dialect, and that the model drives the
+interface. `verify:browser` launches the app in Chromium and asserts the capture
+and playback contexts, the scheduled audio, and that the avatar's mouth actually
+moves with the analyser level.
+
+> A headless container has no audio backend, so Chromium will not feed a file
+> into the fake microphone — `verify:browser` therefore proves the capture graph
+> runs and the playback half works end-to-end, while microphone audio carrying
+> real speech is covered by `verify:live`.
 
 ---
 

@@ -11,12 +11,15 @@ interface CameraModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirmClues: (clues: ExtractedClue[], imageUri?: string) => void;
+  /** What WAZI asked to see, when she opened this herself mid-conversation. */
+  prompt?: string | null;
 }
 
 export const CameraModal: React.FC<CameraModalProps> = ({
   isOpen,
   onClose,
-  onConfirmClues
+  onConfirmClues,
+  prompt = null
 }) => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -87,7 +90,7 @@ export const CameraModal: React.FC<CameraModalProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
             <Camera size={20} color="var(--luminous-teal-dim)" />
             <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-semibold)' }}>
-              Show WAZI: Signboard or Document
+              {prompt ? `Show WAZI: ${prompt}` : 'Show WAZI: Signboard or Document'}
             </h3>
           </div>
           <button

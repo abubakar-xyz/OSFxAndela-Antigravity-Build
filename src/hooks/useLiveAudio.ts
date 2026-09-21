@@ -1,303 +1,425 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { resampleAudio, float32ToInt16, int16ToFloat32, getRmsLevel, isEchoCancellable } from '../utils/audio';
+/* WAZI Civic — the live voice session, as one React hook.
+ *
+ * This is the whole conversational surface the app talks to: connect, speak,
+ * listen, and receive the transcripts and interface commands that come back.
+ * The Web Speech API appears nowhere in it, by design — `speechSynthesis` and
+ * `webkitSpeechRecognition` are a different product wearing WAZI's clothes.
+ */
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { MicCapture } from '../lib/audio/MicCapture';
+import { PcmPlayer } from '../lib/audio/PcmPlayer';
+import {
+  OUTPUT_SAMPLE_RATE,
+  isServerMessage,
+  type ClientMessage,
+  type MomentName,
+  type ServerMessage,
+  type ToolCall
+} from '../lib/live-protocol';
 import type { WaziState } from '../lib/types';
 
-// ═══════════════════════════════════════════════════════════
-// WAZI Live Audio Hook — Hardened Duplex Pipeline
-// Jitter buffering, echo gating, barge-in, auto-reconnect
-// ═══════════════════════════════════════════════════════════
+const MAX_RECONNECT_ATTEMPTS = 4;
+const IDLE_FAREWELL_MS = 60_000;
 
-const JITTER_BUFFER_MS = 50; // Lookahead buffer for smooth playback
-const ECHO_GATE_COOLDOWN_MS = 200; // Mic mute period after speaker stops
-const MAX_RECONNECT_ATTEMPTS = 3;
-const IDLE_FAREWELL_TIMEOUT_MS = 60_000; // 60 seconds
+/** Language WAZI has decided the user is speaking, reported by the model itself. */
+export interface DetectedLanguage {
+  bcp47: string;
+  displayName: string;
+  register?: string;
+  confidence?: number;
+}
 
-export function useLiveAudio(
-  onStateChange?: (state: WaziState) => void,
-  voiceName: string = "Kore",
-  language: string = "en-NG"
-) {
+export interface LiveTranscript {
+  role: 'user' | 'wazi';
+  text: string;
+  /** False while the sentence is still being spoken. */
+  final: boolean;
+}
+
+export interface UseLiveAudioOptions {
+  /** Prebuilt voice / persona id. */
+  voice?: string;
+  /** What the interface last believed the language was. A hint, not a setting. */
+  languageHint?: string;
+  /** A completed utterance from either side. */
+  onTranscript?: (t: LiveTranscript) => void;
+  /** The model asking the interface to do something. Return a value to answer it. */
+  onToolCall?: (call: ToolCall) => unknown | Promise<unknown>;
+  /** WAZI reported which language she is now speaking. */
+  onLanguageDetected?: (lang: DetectedLanguage) => void;
+}
+
+function resolveSocketUrl(): string {
+  const configured = import.meta.env.VITE_WS_PROXY_URL;
+  if (configured) return configured;
+  // Same origin by default: in dev Vite proxies /live to the node server, and in
+  // production both are served from one place. Hardcoding localhost here is why
+  // the old build could never work on a phone on the same network.
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${window.location.host}/live`;
+}
+
+export function useLiveAudio(options: UseLiveAudioOptions = {}) {
+  const { voice = 'Kore', languageHint, onTranscript, onToolCall, onLanguageDetected } = options;
+
   const [waziState, setWaziState] = useState<WaziState>('resting');
   const [micLevel, setMicLevel] = useState(0);
   const [speakerLevel, setSpeakerLevel] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [modelLabel, setModelLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const updateState = useCallback((newState: WaziState) => {
-    setWaziState(newState);
-    onStateChange?.(newState);
-  }, [onStateChange]);
+  // Callbacks live in refs so that a parent re-render never tears the socket
+  // down. The previous hook listed `connect` in its own effect dependencies,
+  // which meant a stale closure kept reconnecting with last render's voice.
+  // They are written after commit, never during render.
+  const handlers = useRef({ onTranscript, onToolCall, onLanguageDetected });
+  const sessionConfig = useRef({ voice, languageHint });
+
+  useEffect(() => {
+    handlers.current = { onTranscript, onToolCall, onLanguageDetected };
+    sessionConfig.current = { voice, languageHint };
+  }, [onTranscript, onToolCall, onLanguageDetected, voice, languageHint]);
 
   const wsRef = useRef<WebSocket | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const micStreamRef = useRef<MediaStream | null>(null);
+  const micRef = useRef<MicCapture | null>(null);
+  const playerRef = useRef<PcmPlayer | null>(null);
 
-  // Playback context for 24kHz Gemini output
-  const playbackContextRef = useRef<AudioContext | null>(null);
-  const nextPlaybackTimeRef = useRef<number>(0);
-
-  // Echo gating refs
-  const isSpeakingRef = useRef(false);
-  const speakerStoppedAtRef = useRef(0);
-  const currentSpeakerRmsRef = useRef(0);
-
-  // Auto-reconnect refs
-  const reconnectAttemptsRef = useRef(0);
+  const reconnectsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const intentionalDisconnectRef = useRef(false);
-
-  // Idle farewell timer
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastActivityRef = useRef(Date.now());
+  const intentionalCloseRef = useRef(false);
+  const hasConnectedRef = useRef(false);
+  const levelRafRef = useRef<number | null>(null);
+  // Reconnection re-enters connect(), so it goes through a ref rather than the
+  // callback capturing itself while it is still being initialised.
+  const connectRef = useRef<() => Promise<void>>(async () => {});
 
-  // Reset idle timer on any activity
-  const resetIdleTimer = useCallback(() => {
-    lastActivityRef.current = Date.now();
-    if (idleTimerRef.current) {
-      clearTimeout(idleTimerRef.current);
-    }
-    idleTimerRef.current = setTimeout(() => {
-      // Send idle farewell signal to server
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: 'idle_farewell' }));
-      }
-    }, IDLE_FAREWELL_TIMEOUT_MS);
+  const send = useCallback((msg: ClientMessage) => {
+    const ws = wsRef.current;
+    if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
   }, []);
 
-  const connect = useCallback(async () => {
-    try {
-      setError(null);
-      intentionalDisconnectRef.current = false;
+  const resetIdleTimer = useCallback(() => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      send({ type: 'moment', moment: 'idle_farewell' });
+    }, IDLE_FAREWELL_MS);
+  }, [send]);
 
-      // 1. Initialize WebSocket to local proxy server
-      const ws = new WebSocket(import.meta.env.VITE_WS_PROXY_URL || 'ws://localhost:8080');
-      wsRef.current = ws;
+  /** Mirrors the player's playback-time level into React state on rAF. */
+  const startLevelPump = useCallback(() => {
+    if (levelRafRef.current !== null) return;
+    const tick = () => {
+      levelRafRef.current = requestAnimationFrame(tick);
+      const player = playerRef.current;
+      if (player) setSpeakerLevel(player.level);
+    };
+    levelRafRef.current = requestAnimationFrame(tick);
+  }, []);
 
-      ws.onopen = () => {
-        setIsConnected(true);
-        updateState('listening');
-        ws.send(JSON.stringify({ type: 'config', voiceName, language }));
-        reconnectAttemptsRef.current = 0; // Reset on successful connect
-        resetIdleTimer();
-      };
-
-      ws.onerror = () => {
-        setError('Audio server unreachable. Falling back to text mode.');
-        setIsConnected(false);
-        setWaziState('error');
-      };
-
-      ws.onclose = () => {
-        setIsConnected(false);
-
-        // Auto-reconnect with exponential backoff (unless intentional)
-        if (!intentionalDisconnectRef.current && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
-          const delay = Math.pow(2, reconnectAttemptsRef.current) * 1000; // 1s, 2s, 4s
-          reconnectAttemptsRef.current++;
-          setWaziState('thinking'); // Visual: "reconnecting"
-          setError(`Reconnecting... (attempt ${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})`);
-
-          reconnectTimerRef.current = setTimeout(() => {
-            connect();
-          }, delay);
-        } else if (!intentionalDisconnectRef.current) {
-          setWaziState('error');
-          setError('Connection lost. Tap Talk to reconnect.');
-        } else {
-          setWaziState('resting');
-        }
-      };
-
-      // 2. Initialize Microphone AudioContext
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-      });
-      micStreamRef.current = stream;
-
-      const audioCtx = new AudioContext();
-      audioContextRef.current = audioCtx;
-      await audioCtx.audioWorklet.addModule('/audio-processor.js');
-
-      const source = audioCtx.createMediaStreamSource(stream);
-      const processor = new AudioWorkletNode(audioCtx, 'mic-processor');
-
-      // Process chunks from microphone with echo gating
-      processor.port.onmessage = (event) => {
-        const float32Audio = event.data as Float32Array;
-        const micRms = getRmsLevel(float32Audio);
-        setMicLevel(micRms);
-
-        // ─── Echo Gate: suppress mic when WAZI is speaking ───
-        const now = Date.now();
-        const speakerCooldownActive = (now - speakerStoppedAtRef.current) < ECHO_GATE_COOLDOWN_MS;
-        const shouldSuppressMic = isSpeakingRef.current ||
-          speakerCooldownActive ||
-          isEchoCancellable(micRms, currentSpeakerRmsRef.current);
-
-        if (shouldSuppressMic) {
-          return; // Don't send mic audio while WAZI is speaking + cooldown
-        }
-
-        // Only send audio if connected and ready
-        if (ws.readyState === WebSocket.OPEN) {
-          const downsampled = resampleAudio(float32Audio, audioCtx.sampleRate, 16000);
-          const pcm16 = float32ToInt16(downsampled);
-          ws.send(pcm16.buffer as ArrayBuffer);
-          resetIdleTimer(); // User is actively speaking
-        }
-      };
-
-      source.connect(processor);
-      processor.connect(audioCtx.destination);
-
-      // 3. Initialize Playback Context (Gemini responds with 24kHz PCM)
-      const playbackCtx = new AudioContext({ sampleRate: 24000 });
-      playbackContextRef.current = playbackCtx;
-      nextPlaybackTimeRef.current = playbackCtx.currentTime;
-
-      // Handle receiving messages from the server (audio + control signals)
-      ws.binaryType = 'arraybuffer';
-      ws.onmessage = async (event) => {
-        if (event.data instanceof ArrayBuffer) {
-          // ─── Binary: Audio chunk from Gemini ───
-          isSpeakingRef.current = true;
-          setWaziState('speaking');
-
-          const int16Data = new Int16Array(event.data);
-          const float32Data = int16ToFloat32(int16Data);
-          const rms = getRmsLevel(float32Data);
-          setSpeakerLevel(rms);
-          currentSpeakerRmsRef.current = rms;
-
-          const audioBuffer = playbackCtx.createBuffer(1, float32Data.length, 24000);
-          audioBuffer.getChannelData(0).set(float32Data);
-
-          const sourceNode = playbackCtx.createBufferSource();
-          sourceNode.buffer = audioBuffer;
-          sourceNode.connect(playbackCtx.destination);
-
-          // Jitter buffer: schedule slightly ahead for smooth playback
-          const jitterOffset = JITTER_BUFFER_MS / 1000;
-          const startTime = Math.max(
-            playbackCtx.currentTime + jitterOffset,
-            nextPlaybackTimeRef.current
-          );
-          sourceNode.start(startTime);
-          nextPlaybackTimeRef.current = startTime + audioBuffer.duration;
-
-          sourceNode.onended = () => {
-            // Revert state if playback queue is drained
-            if (playbackCtx.currentTime >= nextPlaybackTimeRef.current - 0.05) {
-              isSpeakingRef.current = false;
-              speakerStoppedAtRef.current = Date.now();
-              currentSpeakerRmsRef.current = 0;
-              setWaziState('listening');
-              setSpeakerLevel(0);
-              resetIdleTimer();
-            }
-          };
-        } else if (typeof event.data === 'string') {
-          // ─── Text: JSON control message from server ───
-          try {
-            const msg = JSON.parse(event.data);
-
-            if (msg.type === 'turnComplete') {
-              // Model finished its full turn
-              isSpeakingRef.current = false;
-              speakerStoppedAtRef.current = Date.now();
-              currentSpeakerRmsRef.current = 0;
-              // Don't immediately set to 'listening' — let the last audio chunk's onended handle it
-            } else if (msg.type === 'interrupted') {
-              // User barged in — model stopped mid-sentence
-              isSpeakingRef.current = false;
-              speakerStoppedAtRef.current = Date.now();
-              currentSpeakerRmsRef.current = 0;
-              setWaziState('listening');
-              setSpeakerLevel(0);
-            } else if (msg.type === 'error') {
-              setError(msg.message || 'An error occurred with the voice connection.');
-              setWaziState('error');
-            }
-          } catch {
-            // Non-JSON text message, ignore
-          }
-        }
-      };
-
-    } catch (err) {
-      console.error('Error connecting to live audio:', err);
-      setWaziState('error');
-      setError('Could not access microphone. Check browser permissions.');
+  const stopLevelPump = useCallback(() => {
+    if (levelRafRef.current !== null) {
+      cancelAnimationFrame(levelRafRef.current);
+      levelRafRef.current = null;
     }
-  }, [resetIdleTimer]);
+    setSpeakerLevel(0);
+  }, []);
+
+  // ──────────────────────────────────────────────── server messages
+
+  const handleServerMessage = useCallback(
+    async (msg: ServerMessage) => {
+      switch (msg.type) {
+        case 'ready':
+          setModelLabel(msg.modelLabel);
+          setError(null);
+          reconnectsRef.current = 0;
+          setWaziState('listening');
+          resetIdleTimer();
+          break;
+
+        case 'turn_start':
+          setWaziState('speaking');
+          break;
+
+        case 'turn_complete':
+          // Deliberately not flipping to 'listening' here: the server has
+          // finished *sending*, but seconds of audio may still be queued. The
+          // player's own speaking callback moves the state when the last sample
+          // actually leaves the speakers.
+          resetIdleTimer();
+          break;
+
+        case 'interrupted':
+          // The user talked over WAZI. Everything queued is stale.
+          playerRef.current?.interrupt();
+          setWaziState('listening');
+          resetIdleTimer();
+          break;
+
+        case 'transcript':
+          handlers.current.onTranscript?.({ role: msg.role, text: msg.text, final: msg.final });
+          if (msg.role === 'user') resetIdleTimer();
+          break;
+
+        case 'tool_call':
+          for (const call of msg.calls) {
+            if (call.name === 'note_detected_language') {
+              const args = call.args as Record<string, string | number>;
+              handlers.current.onLanguageDetected?.({
+                bcp47: String(args.bcp47 ?? ''),
+                displayName: String(args.display_name ?? ''),
+                register: args.register ? String(args.register) : undefined,
+                confidence: typeof args.confidence === 'number' ? args.confidence : undefined
+              });
+            }
+            let response: unknown = { ok: true };
+            try {
+              response = (await handlers.current.onToolCall?.(call)) ?? { ok: true };
+            } catch (err) {
+              response = { ok: false, error: String(err) };
+            }
+            // The model is waiting on this before it continues the sentence, so
+            // every call is answered, including ones the app chose to ignore.
+            send({ type: 'tool_result', id: call.id, name: call.name, response });
+          }
+          break;
+
+        case 'go_away':
+          // Gemini is about to drop us. Close on our own terms so the reconnect
+          // path runs cleanly rather than after a silent dead socket.
+          intentionalCloseRef.current = false;
+          wsRef.current?.close();
+          break;
+
+        case 'error':
+          setError(msg.message);
+          if (msg.fatal) {
+            intentionalCloseRef.current = true;
+            setWaziState('error');
+            wsRef.current?.close();
+          }
+          break;
+      }
+    },
+    [resetIdleTimer, send]
+  );
+
+  // ─────────────────────────────────────────────────────── connect
+
+  const connect = useCallback(async () => {
+    if (wsRef.current) return;
+
+    setError(null);
+    intentionalCloseRef.current = false;
+    setWaziState('waiting_permission');
+
+    const player = new PcmPlayer(OUTPUT_SAMPLE_RATE, {
+      onSpeakingChange: (speaking) => {
+        if (speaking) {
+          setWaziState('speaking');
+          startLevelPump();
+        } else {
+          stopLevelPump();
+          setWaziState((current) => (current === 'speaking' ? 'listening' : current));
+          resetIdleTimer();
+        }
+      }
+    });
+    playerRef.current = player;
+
+    try {
+      // Both of these must happen inside the user gesture that called connect().
+      // An AudioContext created later starts suspended and WAZI is silently mute.
+      await player.resume();
+
+      const mic = new MicCapture({
+        onFrame: (pcm) => {
+          const ws = wsRef.current;
+          if (ws?.readyState === WebSocket.OPEN) {
+            ws.send(pcm.buffer as ArrayBuffer);
+          }
+        },
+        onLevel: setMicLevel
+      });
+      micRef.current = mic;
+      await mic.start();
+    } catch (err) {
+      console.error('[wazi] could not open the microphone:', err);
+      setError('WAZI needs microphone access to talk with you. Check your browser permissions.');
+      setWaziState('error');
+      await micRef.current?.stop();
+      await playerRef.current?.close();
+      micRef.current = null;
+      playerRef.current = null;
+      return;
+    }
+
+    const ws = new WebSocket(resolveSocketUrl());
+    ws.binaryType = 'arraybuffer';
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setIsConnected(true);
+      setWaziState('listening');
+      send({
+        type: 'start',
+        voice: sessionConfig.current.voice,
+        languageHint: sessionConfig.current.languageHint,
+        resumed: hasConnectedRef.current
+      });
+      hasConnectedRef.current = true;
+      resetIdleTimer();
+    };
+
+    ws.onmessage = (event) => {
+      if (event.data instanceof ArrayBuffer) {
+        // Hot path: WAZI's voice. Straight into the playback queue.
+        playerRef.current?.enqueue(new Int16Array(event.data));
+        return;
+      }
+      try {
+        const parsed: unknown = JSON.parse(String(event.data));
+        if (isServerMessage(parsed)) void handleServerMessage(parsed);
+      } catch {
+        /* a frame we do not understand is not worth crashing over */
+      }
+    };
+
+    ws.onerror = () => {
+      // `onerror` carries no detail by spec; `onclose` decides what happens next.
+      setError((current) => current ?? 'Lost contact with the voice server.');
+    };
+
+    ws.onclose = () => {
+      wsRef.current = null;
+      setIsConnected(false);
+      stopLevelPump();
+      void playerRef.current?.close();
+      void micRef.current?.stop();
+      playerRef.current = null;
+      micRef.current = null;
+
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+        idleTimerRef.current = null;
+      }
+
+      if (intentionalCloseRef.current) {
+        setWaziState('resting');
+        return;
+      }
+
+      if (reconnectsRef.current < MAX_RECONNECT_ATTEMPTS) {
+        const attempt = ++reconnectsRef.current;
+        const delay = Math.min(8000, 2 ** (attempt - 1) * 1000);
+        setWaziState('thinking');
+        setError(`Reconnecting… (${attempt}/${MAX_RECONNECT_ATTEMPTS})`);
+        reconnectTimerRef.current = setTimeout(() => void connectRef.current(), delay);
+      } else {
+        setWaziState('error');
+        setError('Could not reach the voice server. Tap Talk to try again.');
+      }
+    };
+  }, [handleServerMessage, resetIdleTimer, send, startLevelPump, stopLevelPump]);
+
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
+
+  // ──────────────────────────────────────────────────── disconnect
 
   const disconnect = useCallback(() => {
-    intentionalDisconnectRef.current = true;
+    intentionalCloseRef.current = true;
+    reconnectsRef.current = 0;
 
-    // Clear reconnect timer
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
     }
-
-    // Clear idle timer
     if (idleTimerRef.current) {
       clearTimeout(idleTimerRef.current);
       idleTimerRef.current = null;
     }
 
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    if (playbackContextRef.current) {
-      playbackContextRef.current.close();
-      playbackContextRef.current = null;
-    }
-    if (micStreamRef.current) {
-      micStreamRef.current.getTracks().forEach(t => t.stop());
-      micStreamRef.current = null;
-    }
+    send({ type: 'mic_end' });
+    wsRef.current?.close();
+    wsRef.current = null;
 
-    // Reset echo gate state
-    isSpeakingRef.current = false;
-    speakerStoppedAtRef.current = 0;
-    currentSpeakerRmsRef.current = 0;
-    reconnectAttemptsRef.current = 0;
+    stopLevelPump();
+    void micRef.current?.stop();
+    void playerRef.current?.close();
+    micRef.current = null;
+    playerRef.current = null;
 
     setIsConnected(false);
+    setIsMuted(false);
+    setMicLevel(0);
     setWaziState('resting');
     setError(null);
-  }, []);
+  }, [send, stopLevelPump]);
 
-  const sendTextPrompt = useCallback((text: string) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ text }));
+  // ────────────────────────────────────────────────────── controls
+
+  /** Send a typed turn — for noisy places, or for anyone who prefers to write. */
+  const sendText = useCallback(
+    (text: string) => {
+      if (!text.trim()) return false;
+      if (wsRef.current?.readyState !== WebSocket.OPEN) return false;
+      send({ type: 'text', text });
       setWaziState('thinking');
       resetIdleTimer();
-    }
-  }, [resetIdleTimer]);
+      return true;
+    },
+    [resetIdleTimer, send]
+  );
+
+  /** Nudge WAZI at a UX moment (e.g. the evidence board finished loading). */
+  const sendMoment = useCallback(
+    (moment: MomentName) => {
+      send({ type: 'moment', moment });
+      resetIdleTimer();
+    },
+    [resetIdleTimer, send]
+  );
+
+  const toggleMute = useCallback(() => {
+    setIsMuted((current) => {
+      const next = !current;
+      micRef.current?.setMuted(next);
+      if (next) send({ type: 'mic_end' });
+      return next;
+    });
+  }, [send]);
 
   useEffect(() => {
     return () => {
-      intentionalDisconnectRef.current = true;
-      disconnect();
+      intentionalCloseRef.current = true;
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      if (levelRafRef.current !== null) cancelAnimationFrame(levelRafRef.current);
+      wsRef.current?.close();
+      void micRef.current?.stop();
+      void playerRef.current?.close();
     };
-  }, [disconnect]);
+  }, []);
 
   return {
     waziState,
     micLevel,
     speakerLevel,
     isConnected,
+    isMuted,
+    modelLabel,
     error,
     connect,
     disconnect,
-    sendTextPrompt
+    sendText,
+    sendMoment,
+    toggleMute
   };
 }
-

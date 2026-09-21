@@ -69,10 +69,14 @@ export const WaziCharacter: React.FC<WaziCharacterProps> = ({
     ? 1 + micLevel * 0.8      // Softer breathing with mic
     : 1;
 
-  // Head tilt: subtle rotation based on state. Nodding when speaking.
-  const headTilt = isSpeaking 
-    ? 1.5 + Math.sin(Date.now() / 150) * (speakerLevel * 2) 
-    : isListening ? -1 
+  // Head tilt: subtle rotation based on state. When speaking, the tilt follows
+  // the voice amplitude itself — `speakerLevel` is now sampled from the audio
+  // actually leaving the speakers, so the head moves with the sound rather than
+  // with a clock read during render (which only advanced when React happened to
+  // re-render, and made the component impure into the bargain).
+  const headTilt = isSpeaking
+    ? 1.5 + (speakerLevel - 0.35) * 4
+    : isListening ? -1
     : isThinking ? 2 : 0;
   
   // Mouth opening mapped to speakerLevel
@@ -220,8 +224,12 @@ export const WaziCharacter: React.FC<WaziCharacterProps> = ({
             transition: 'transform 0.1s linear'
           }}
         >
-          {/* Inner Cavity (Amber Luminescence) */}
+          {/* Inner Cavity (Amber Luminescence) — opacity and height are a direct
+              function of speakerLevel, which is sampled from the audio leaving
+              the speakers. Tagged so the browser verification can assert the
+              mouth really moves with the voice. */}
           <div
+            data-wazi-mouth=""
             style={{
               position: 'absolute',
               width: `${100 + mouthOpenAmount * 0.2}%`,

@@ -1,80 +1,70 @@
-// Utility functions for PCM audio conversion
+/* WAZI Civic — PCM conversion helpers.
+ *
+ * The live pipeline does not resample in JavaScript on any mainstream browser:
+ * capture runs in an AudioContext opened at 16kHz and playback in one opened at
+ * 24kHz, so the browser's native resampler handles both ends. What remains here
+ * is the fallback for a browser that ignores a requested sample rate, plus the
+ * format conversions used across the app.
+ */
 
 /**
- * Downsamples Float32Audio from the browser's sample rate to the target rate (16000 Hz).
- * Simple decimation (for demonstration) - ideally use a proper low-pass filter in production.
+ * Linear-interpolating resampler for Int16 PCM.
+ *
+ * The previous implementation averaged each output sample over a bucket of
+ * input samples, which divided by zero whenever a bucket came out empty
+ * (upsampling, or any ratio below 1) and wrote NaN into the stream — silence at
+ * best, a burst of noise at worst. Interpolation has neither failure mode and
+ * is cheaper.
+ *
+ * This is not band-limited, so it is a fallback rather than the main path:
+ * downsampling without a low-pass filter folds high frequencies back down as
+ * aliasing. Acceptable for speech at 3:1; not something to route audio through
+ * by choice.
  */
-export function resampleAudio(audioBuffer: Float32Array, inputRate: number, outputRate: number): Float32Array {
-  if (inputRate === outputRate) return audioBuffer;
+export function resampleInt16(
+  input: Int16Array<ArrayBuffer>,
+  inputRate: number,
+  outputRate: number
+): Int16Array<ArrayBuffer> {
+  if (inputRate === outputRate || input.length === 0) return input;
 
   const ratio = inputRate / outputRate;
-  const newLength = Math.round(audioBuffer.length / ratio);
-  const result = new Float32Array(newLength);
-  
-  let offsetResult = 0;
-  let offsetBuffer = 0;
+  const outLength = Math.max(1, Math.floor(input.length / ratio));
+  const output = new Int16Array(new ArrayBuffer(outLength * 2));
 
-  while (offsetResult < result.length) {
-    const nextOffsetBuffer = Math.round((offsetResult + 1) * ratio);
-    
-    // Simple average of samples
-    let accum = 0;
-    let count = 0;
-    for (let i = offsetBuffer; i < nextOffsetBuffer && i < audioBuffer.length; i++) {
-      accum += audioBuffer[i];
-      count++;
-    }
-    
-    result[offsetResult] = accum / count;
-    offsetResult++;
-    offsetBuffer = nextOffsetBuffer;
+  for (let i = 0; i < outLength; i++) {
+    const position = i * ratio;
+    const lower = Math.floor(position);
+    const upper = Math.min(lower + 1, input.length - 1);
+    const fraction = position - lower;
+    output[i] = Math.round(input[lower] * (1 - fraction) + input[upper] * fraction);
   }
-  
-  return result;
+  return output;
 }
 
-/**
- * Converts Float32Array audio data to Int16Array (PCM 16-bit).
- */
-export function float32ToInt16(float32Array: Float32Array): Int16Array {
-  const int16Array = new Int16Array(float32Array.length);
-  for (let i = 0; i < float32Array.length; i++) {
-    const s = Math.max(-1, Math.min(1, float32Array[i]));
-    int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+/** Float32 [-1,1] → Int16 PCM. */
+export function float32ToInt16(input: Float32Array): Int16Array {
+  const output = new Int16Array(input.length);
+  for (let i = 0; i < input.length; i++) {
+    const s = Math.max(-1, Math.min(1, input[i]));
+    output[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
   }
-  return int16Array;
+  return output;
 }
 
-/**
- * Converts Int16Array (PCM 16-bit) to Float32Array for Web Audio API playback.
- */
-export function int16ToFloat32(int16Array: Int16Array): Float32Array {
-  const float32Array = new Float32Array(int16Array.length);
-  for (let i = 0; i < int16Array.length; i++) {
-    const s = int16Array[i];
-    float32Array[i] = s < 0 ? s / 0x8000 : s / 0x7FFF;
+/** Int16 PCM → Float32 [-1,1]. */
+export function int16ToFloat32(input: Int16Array): Float32Array {
+  const output = new Float32Array(input.length);
+  for (let i = 0; i < input.length; i++) {
+    output[i] = input[i] < 0 ? input[i] / 0x8000 : input[i] / 0x7fff;
   }
-  return float32Array;
+  return output;
 }
 
-/**
- * Calculates the RMS (Root Mean Square) volume level of a Float32Array [0.0 - 1.0].
- */
+/** RMS level of a Float32 buffer, 0..1. */
 export function getRmsLevel(buffer: Float32Array): number {
+  if (buffer.length === 0) return 0;
   let sum = 0;
-  for (let i = 0; i < buffer.length; i++) {
-    sum += buffer[i] * buffer[i];
-  }
+  for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
   return Math.sqrt(sum / buffer.length);
-}
-
-/**
- * Determines if mic input should be suppressed to prevent echo.
- * Returns true when the speaker output level suggests the model would
- * hear its own voice being played back through the microphone.
- */
-export function isEchoCancellable(micRms: number, speakerRms: number): boolean {
-  // If speaker is producing audio and is louder than a threshold,
-  // the mic is likely picking up speaker bleed
-  return speakerRms > 0.02 && speakerRms > micRms * 0.8;
 }

@@ -1,0 +1,34 @@
+{
+  "jurisdiction": "NG",
+  "records": [
+    {
+      "id": "NPHCDA/2023/LOT-14",
+      "title": "Turnkey Rehabilitation and Equipping of Akute Model Primary Health Centre",
+      "sector": "Health",
+      "implementingAgency": "National Primary Health Care Development Agency",
+      "contractor": "Apex Global Allied Works Ltd",
+      "contractorReg": "RC-1489201",
+      "contractDate": "2023-08-15",
+      "budgetAllocated": 45000000,
+      "currency": "NGN",
+      "disbursedAmount": 38250000,
+      "reportedStatus": "Completed & Handed Over",
+      "reportedCompletionDate": "2024-03-20",
+      "location": {
+        "state": "Ogun",
+        "lga": "Ifo",
+        "ward": "Akute",
+        "cadastralPlot": "Plot 12, Community Link Road, Akute Central",
+        "coordinates": { "lat": 6.6914, "lng": 3.3721 }
+      },
+      "scopeOfWork": [
+        "Roof reconstruction and parapet walling",
+        "Aluminum glazed windows and steel security doors",
+        "10-bed female and male observation wards",
+        "Solar powered cold chain refrigerator for vaccines",
+        "15kVA soundproof auxiliary diesel generator",
+        "Borehole with overhead tank reticulation"
+      ]
+    }
+  ]
+}

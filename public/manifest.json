@@ -1,0 +1,17 @@
+{
+  "name": "WAZI Civic",
+  "short_name": "WAZI",
+  "description": "Your civic companion — understand, verify, act.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#071820",
+  "theme_color": "#16C6B1",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "jurisdiction": "NG",
+  "procedures": [
+    {
+      "id": "proc-foi",
+      "name": "Freedom of Information (FOI) Request",
+      "statute": "Freedom of Information Act 2011, Section 2(3) and Section 3",
+      "maximumResponseDays": 7,
+      "feeApplicable": false,
+      "mandatoryFields": [
+        "Applicant name / designation",
+        "Clear description of document or record requested",
+        "Preferred format of delivery"
+      ],
+      "guidance": "Public institutions are legally required to grant access or state lawful grounds of refusal within 7 working days. No fee may be charged for inspection of public records."
+    },
+    {
+      "id": "proc-complaint",
+      "name": "Public Infrastructure Non-Delivery Petition",
+      "statute": "Public Procurement Act 2007, Section 54 (Administrative Review)",
+      "maximumResponseDays": 15,
+      "feeApplicable": false,
+      "mandatoryFields": [
+        "Project description & location",
+        "Documented discrepancy",
+        "Requested remedial action"
+      ],
+      "guidance": "Petitions trigger an on-site joint verification by the agency's monitoring team and the contractor within 15 business days."
+    }
+  ]
+}

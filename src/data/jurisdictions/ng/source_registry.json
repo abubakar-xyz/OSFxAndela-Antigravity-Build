@@ -1,0 +1,52 @@
+{
+  "jurisdiction": "NG",
+  "name": "Nigeria Federal & State Public Evidence Registry",
+  "version": "2026.1.0",
+  "sources": [
+    {
+      "id": "nocopo",
+      "name": "Nigeria Open Contracting Portal (NOCOPO) / BPP",
+      "url": "https://nocopo.bpp.gov.ng",
+      "type": "procurement_portal",
+      "authority": "Bureau of Public Procurement",
+      "freshnessCycle": "Daily",
+      "reliabilityTier": "Primary"
+    },
+    {
+      "id": "open_treasury",
+      "name": "Federal Government Open Treasury Portal",
+      "url": "https://opentreasury.gov.ng",
+      "type": "financial_disbursement",
+      "authority": "Office of the Accountant-General of the Federation",
+      "freshnessCycle": "Daily",
+      "reliabilityTier": "Primary"
+    },
+    {
+      "id": "nphcda_registry",
+      "name": "NPHCDA National Health Facility Baseline Register",
+      "url": "https://nphcda.gov.ng/phc-facilities",
+      "type": "infrastructure_registry",
+      "authority": "National Primary Health Care Development Agency",
+      "freshnessCycle": "Quarterly",
+      "reliabilityTier": "Primary"
+    },
+    {
+      "id": "budget_office",
+      "name": "Budget Office of the Federation (FGN Citizen Budget)",
+      "url": "https://budgetoffice.gov.ng",
+      "type": "budget_allocation",
+      "authority": "Federal Ministry of Budget and Economic Planning",
+      "freshnessCycle": "Annual / Supplementary",
+      "reliabilityTier": "Primary"
+    },
+    {
+      "id": "ogun_health_board",
+      "name": "Ogun State Primary Health Care Development Board Facility Database",
+      "url": "https://oghealth.gov.ng",
+      "type": "state_monitoring",
+      "authority": "Ogun State Ministry of Health",
+      "freshnessCycle": "Biannual",
+      "reliabilityTier": "Secondary"
+    }
+  ]
+}

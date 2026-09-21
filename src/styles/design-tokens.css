@@ -1,0 +1,124 @@
+/* WAZI Civic — Design Tokens
+   Single source of truth for color, spacing, elevation, radius, and layout constraints
+*/
+
+:root {
+  /* Deep foundations */
+  --midnight-ink:        #071820;    /* Primary background, deep trust */
+  --midnight-ink-95:     #051219;    /* Darkest background depth */
+  --midnight-ink-90:     #0A2230;    /* Elevated surfaces in dark mode */
+  --midnight-ink-80:     #132D3C;    /* Cards, overlays in dark context */
+  --midnight-ink-70:     #1E3A4A;    /* Subtle borders, dividers */
+  --midnight-ink-60:     #2B4C5F;    /* Muted elements in dark mode */
+
+  /* Warm grounds (Evidence & Draft workspaces) */
+  --warm-paper:          #F7F3E8;    /* Light mode background, document bg */
+  --warm-paper-95:       #F2EDE0;    /* Slightly recessed surfaces */
+  --warm-paper-90:       #EBE5D6;    /* Input fields, secondary bg */
+  --warm-paper-80:       #DDD7C7;    /* Borders in light mode */
+  --warm-paper-70:       #CBC4B2;    /* Emphasized borders in light mode */
+
+  /* The WAZI colors — define the luminous character */
+  --luminous-teal:       #16C6B1;    /* WAZI's primary energy, CTAs */
+  --luminous-teal-light: #4DD8C8;    /* Hover states, glow effects */
+  --luminous-teal-dim:   #0E8A7D;    /* Pressed states */
+  --luminous-teal-glow:  rgba(22, 198, 177, 0.18); /* Ambient glow */
+
+  --sun-amber:           #F4B942;    /* Warmth, attention, notifications */
+  --sun-amber-light:     #F7CC6E;    /* Gentle highlights */
+  --sun-amber-dim:       #D49C2A;    /* Pressed/active amber states */
+  --sun-amber-glow:      rgba(244, 185, 66, 0.18);
+
+  /* Semantic Colors — Evidence States (Reserved strictly for trust communication) */
+  --verified-green:      #4BCB91;    /* VERIFIED — directly confirmed */
+  --verified-green-bg:   rgba(75, 203, 145, 0.14);
+  --verified-green-border: rgba(75, 203, 145, 0.35);
+
+  --corroborated-blue:   #5BA3E6;    /* CORROBORATED — independently supported */
+  --corroborated-blue-bg: rgba(91, 163, 230, 0.14);
+  --corroborated-blue-border: rgba(91, 163, 230, 0.35);
+
+  --reported-amber:      #E8A838;    /* REPORTED — claim exists, unverified */
+  --reported-amber-bg:   rgba(232, 168, 56, 0.14);
+  --reported-amber-border: rgba(232, 168, 56, 0.35);
+
+  --conflicting-coral:   #EC7067;    /* CONFLICTING — sources disagree */
+  --conflicting-coral-bg: rgba(236, 112, 103, 0.14);
+  --conflicting-coral-border: rgba(236, 112, 103, 0.35);
+
+  --unknown-slate:       #78909A;    /* UNKNOWN — insufficient evidence */
+  --unknown-slate-bg:    rgba(120, 144, 154, 0.14);
+  --unknown-slate-border: rgba(120, 144, 154, 0.35);
+
+  /* Neutral Scale */
+  --neutral-100:  #FFFFFF;
+  --neutral-95:   #F5F5F5;
+  --neutral-90:   #E8E8E8;
+  --neutral-80:   #C4C4C4;
+  --neutral-60:   #8C8C8C;
+  --neutral-40:   #5C5C5C;
+  --neutral-20:   #2E2E2E;
+  --neutral-10:   #1A1A1A;
+  --neutral-05:   #0D0D0D;
+
+  /* Elevation & Shadows (Amber/Ink-tinted warm darkness) */
+  --shadow-xs:    0 1px 2px rgba(7, 24, 32, 0.08);
+  --shadow-sm:    0 2px 5px rgba(7, 24, 32, 0.10);
+  --shadow-md:    0 4px 14px rgba(7, 24, 32, 0.12);
+  --shadow-lg:    0 8px 28px rgba(7, 24, 32, 0.16);
+  --shadow-xl:    0 16px 52px rgba(7, 24, 32, 0.22);
+
+  /* Character Glow Aura */
+  --wazi-glow:    0 0 50px rgba(22, 198, 177, 0.25),
+                  0 0 100px rgba(22, 198, 177, 0.12);
+  --wazi-glow-active: 0 0 65px rgba(22, 198, 177, 0.40),
+                      0 0 130px rgba(22, 198, 177, 0.20);
+  --wazi-glow-amber: 0 0 60px rgba(244, 185, 66, 0.30),
+                     0 0 120px rgba(244, 185, 66, 0.15);
+
+  --card-glow:    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  /* Border Radius */
+  --radius-xs:   4px;     /* Chips, tags, small badges */
+  --radius-sm:   8px;     /* Input fields, small cards */
+  --radius-md:   12px;    /* Standard cards, buttons */
+  --radius-lg:   16px;    /* Modal sheets, workspace panels */
+  --radius-xl:   24px;    /* The talk button, major CTAs */
+  --radius-full: 9999px;  /* Pills, avatar containers, round buttons */
+
+  /* Spacing Scale (8px base) */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-16:  64px;
+  --space-20:  80px;
+
+  /* Layout Constraints (Mobile First) */
+  --width-content:    min(100vw, 440px);
+  --width-workspace:  min(100vw, 540px);
+  --touch-min:        48px;
+  --touch-comfortable: 56px;
+
+  /* Safe Areas */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
+
+  /* Animation Timings */
+  --duration-instant: 100ms;
+  --duration-fast:    200ms;
+  --duration-normal:  300ms;
+  --duration-slow:    500ms;
+  --duration-gentle:  800ms;
+
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}

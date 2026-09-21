@@ -1,0 +1,30 @@
+{
+  "jurisdiction": "NG",
+  "institutions": [
+    {
+      "id": "inst-nphcda",
+      "name": "National Primary Health Care Development Agency",
+      "shortName": "NPHCDA",
+      "mandate": "Promotion and revitalisation of primary healthcare infrastructure, personnel, and maternal-child service delivery nationwide.",
+      "level": "Federal",
+      "parentMinistry": "Federal Ministry of Health & Social Welfare",
+      "hqAddress": "Plot 681/682 Port-Harcourt Crescent, Off Gimbiya Street, Area 11, Garki, Abuja"
+    },
+    {
+      "id": "inst-icpc",
+      "name": "Independent Corrupt Practices and Other Related Offences Commission",
+      "shortName": "ICPC",
+      "mandate": "Investigation, prosecution, and tracking of constituency and capital intervention projects to eliminate contract abandonment and procurement fraud.",
+      "level": "Federal Oversight",
+      "hqAddress": "Plot 802 Constitution Avenue, Central Business District, Abuja"
+    },
+    {
+      "id": "inst-ogphcb",
+      "name": "Ogun State Primary Health Care Development Board",
+      "shortName": "OGPHCDB",
+      "mandate": "Direct administrative and healthcare personnel management across Ogun State health wards.",
+      "level": "State",
+      "hqAddress": "State Secretariat Complex, Oke-Mosan, Abeokuta, Ogun State"
+    }
+  ]
+}

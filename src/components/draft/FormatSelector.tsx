@@ -1,0 +1,64 @@
+/* WAZI Civic — Draft Format Selector Pills */
+
+import React from 'react';
+import type { DraftFormat } from '../../lib/types';
+import { FileText, Mail, MessageCircle, AlertTriangle } from 'lucide-react';
+
+interface FormatSelectorProps {
+  selectedFormat: DraftFormat;
+  onSelectFormat: (format: DraftFormat) => void;
+}
+
+export const FormatSelector: React.FC<FormatSelectorProps> = ({
+  selectedFormat,
+  onSelectFormat
+}) => {
+  const formats: { id: DraftFormat; label: string; icon: React.ReactNode }[] = [
+    { id: 'foi', label: 'FOI Request', icon: <FileText size={14} /> },
+    { id: 'complaint', label: 'Service Complaint', icon: <AlertTriangle size={14} /> },
+    { id: 'email', label: 'Inquiry Letter', icon: <Mail size={14} /> },
+    { id: 'whatsapp', label: 'WhatsApp Brief', icon: <MessageCircle size={14} /> }
+  ];
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        gap: 'var(--space-2)',
+        overflowX: 'auto',
+        paddingBottom: 'var(--space-2)',
+        scrollbarWidth: 'none'
+      }}
+    >
+      {formats.map((fmt) => {
+        const isActive = selectedFormat === fmt.id;
+        return (
+          <button
+            key={fmt.id}
+            onClick={() => onSelectFormat(fmt.id)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-full)',
+              border: '1px solid',
+              borderColor: isActive ? 'var(--midnight-ink)' : 'var(--warm-paper-80)',
+              backgroundColor: isActive ? 'var(--midnight-ink)' : 'var(--neutral-100)',
+              color: isActive ? 'var(--warm-paper)' : 'var(--neutral-20)',
+              fontSize: 'var(--text-xs)',
+              fontWeight: 'var(--weight-semibold)',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'all var(--duration-fast)',
+              boxShadow: isActive ? 'var(--shadow-xs)' : 'none'
+            }}
+          >
+            {fmt.icon}
+            <span>{fmt.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+};

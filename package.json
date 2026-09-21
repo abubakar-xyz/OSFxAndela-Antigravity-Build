@@ -12,7 +12,8 @@
     "verify:live": "node scripts/verify-live.mjs",
     "verify:browser": "node scripts/verify-browser.mjs",
     "verify": "npm run build && node scripts/verify-live.mjs && node scripts/verify-browser.mjs",
-    "verify:journey": "node scripts/verify-journey.mjs"
+    "verify:journey": "node scripts/verify-journey.mjs",
+    "demo": "node scripts/record-demo.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.23.0",

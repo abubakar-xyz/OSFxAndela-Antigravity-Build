@@ -41,7 +41,6 @@ export const App: React.FC = () => {
   // Navigation & View States
   const [currentView, setCurrentView] = useState<'home' | 'evidence' | 'draft' | 'cases'>('home');
   const [waziStatusText, setWaziStatusText] = useState<string>('WAZI');
-  const [captionText, setCaptionText] = useState<string>(OPENING_LINE);
 
   // Conversation & Case State
   const [transcripts, setTranscripts] = useState<TranscriptItem[]>([
@@ -104,13 +103,6 @@ export const App: React.FC = () => {
       return next.slice(-MAX_TRANSCRIPT_ITEMS);
     });
 
-    if (speaker === 'wazi') {
-      setCaptionText((current) => {
-        // Captions follow WAZI's current sentence, restarting on a new turn.
-        const isContinuation = current !== OPENING_LINE && !current.endsWith('…');
-        return isContinuation ? current + text : text;
-      });
-    }
   }, []);
 
   // ─────────────────────────────────────────────── tool call handling
@@ -265,7 +257,6 @@ export const App: React.FC = () => {
 
   /** Screen-only narration. Verified text belongs on screen; the voice is the model's. */
   const showWaziLine = useCallback((text: string) => {
-    setCaptionText(text);
     setTranscripts((previous) =>
       [...previous, { id: `wazi-${Date.now()}`, speaker: 'wazi' as const, text, timestamp: Date.now() }]
         .slice(-MAX_TRANSCRIPT_ITEMS)
@@ -350,6 +341,17 @@ export const App: React.FC = () => {
     setActiveCase(c);
     sounds.playActionComplete();
   }, []);
+
+  // The caption is the newest thing WAZI said, taken from the transcript rather
+  // than accumulated separately — a separate accumulator had no way to know a
+  // turn had ended, so each new sentence was glued onto the previous one and
+  // the caption grew into a run-on paragraph.
+  const captionText = useMemo(() => {
+    for (let i = transcripts.length - 1; i >= 0; i--) {
+      if (transcripts[i].speaker === 'wazi') return transcripts[i].text;
+    }
+    return OPENING_LINE;
+  }, [transcripts]);
 
   // The pill shows what WAZI is actually speaking, falling back to the stored
   // hint before anyone has said anything.

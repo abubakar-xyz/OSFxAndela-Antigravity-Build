@@ -382,6 +382,10 @@ export class LiveBridge {
     const sc = m.serverContent;
 
     if (m.toolCall?.functionCalls?.length) {
+      // Logged because a tool call is WAZI taking an action on the user's
+      // screen; when the interface does something unexpected, this is the
+      // first place to look.
+      this.log('tool call:', m.toolCall.functionCalls.map((f) => f.name).join(', '));
       this._send({
         type: 'tool_call',
         calls: m.toolCall.functionCalls.map((fc) => ({

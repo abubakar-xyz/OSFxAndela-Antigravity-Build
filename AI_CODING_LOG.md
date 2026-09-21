@@ -72,3 +72,44 @@ Both harnesses found real defects rather than confirming a happy path:
 `verify:live` 11/11 and `verify:browser` 12/12 against the real Gemini Live API,
 on repeated fresh runs. `tsc -b` clean, `vite build` clean, `oxlint` clean apart
 from two pre-existing `DraftStudio` warnings untouched by this work.
+
+
+## 4. Learning From Our Own Prior Work (Claude Code)
+
+A second repository of ours — `abubakar-xyz/my-sabi`, a single-purpose Gemini
+Live companion — was studied as a reference implementation and deliberately not
+modified. It had independently converged on the same Live model, which was
+useful confirmation, and its client audio was ahead of ours in specific,
+measurable ways.
+
+**Taken from it:**
+- Dual time-domain/frequency-domain viseme extraction. Mouth openings per
+  session rose from 78 to 129 and peak opening from 0.74 to 0.95 on the same
+  harness.
+- Jitter cushion only at the start of a turn (35ms), not on every chunk (80ms).
+- The shape of a barge-in-permitting echo gate, which reversed part of an
+  earlier decision of ours. Recorded openly as DEC-014.
+- Running Vite as middleware so the whole app is one command on one port.
+- A time-of-day greeting driven by the browser's local hour.
+
+**Deliberately not taken:** its session storage parks the live session in a
+module-level global, which works for one user and hands one person's
+conversation to the next visitor the moment two people connect. Ours is keyed
+per browser tab, bounded, and evicts oldest-first.
+
+## 5. What The Third Harness Found
+
+`scripts/verify-journey.mjs` drives the whole judged journey in a real browser
+at 360px — a cheap phone screen — and needs no API key. It found:
+
+- Four CSS custom properties referenced by components but never defined, so the
+  browser discarded those declarations. The language modal and the email
+  dispatch sheet — both on the demo path — rendered with no background.
+- An A4 document preview carrying a fixed aspect ratio while its content height
+  was content-driven, so the attachments list spilled out of the paper and
+  swallowed clicks on the dispatch button.
+- A format-pill row without `min-width: 0`, which pushed the whole page sideways
+  on a narrow screen instead of scrolling within itself.
+
+None of these are visible in a desktop browser at a comfortable width, and none
+would have been caught by a typecheck or a lint pass.

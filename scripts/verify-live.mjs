@@ -16,6 +16,7 @@
  *   5. 24kHz PCM audio comes back (the speaker path)
  *   6. the reply is in the language that was spoken, not a default
  *   7. the model drives the UI through tool calls
+ *   8. a dropped connection resumes the same conversation, not a new one
  *
  * Test speech is synthesised once via the TTS model and cached under .cache/.
  */
@@ -158,7 +159,8 @@ async function main() {
     ws.once('error', rej);
   });
 
-  ws.send(JSON.stringify({ type: 'start', voice: 'Kore', languageHint: 'en-NG' }));
+  const TAB_ID = `verify_${Date.now().toString(36)}`;
+  ws.send(JSON.stringify({ type: 'start', voice: 'Kore', languageHint: 'en-NG', sessionId: TAB_ID, localHour: 10 }));
 
   const ready = await waitFor('ready', (m) => m.type === 'ready');
   check('live session opened', true, `${ready.modelLabel} (${ready.model}), voice ${ready.voice} → "${ready.personaName}"`);
@@ -202,23 +204,66 @@ async function main() {
     langCall ? `${langCall.args.display_name} (${langCall.args.bcp47})` : 'note_detected_language was never called');
 
   // ── 7. voice drives the UI
-  const toolsBefore = state.toolCalls.length;
-  ws.send(JSON.stringify({
-    type: 'text',
-    text: 'Yes — please open the evidence board for it. The signboard says the borehole project was completed in 2024.'
-  }));
-  try {
-    await waitFor('an interface tool call', (m) => m.type === 'tool_call', 40000);
-  } catch { /* asserted below */ }
+  //
+  // The assertion is over the WHOLE session, not over one nominated turn. WAZI
+  // opens the board as soon as the spoken description gives her a claim and a
+  // place, which is usually the first utterance — an earlier version of this
+  // check only counted calls made after a later follow-up and so reported a
+  // failure while the app was behaving correctly. If she has already opened it,
+  // declining to open it a second time is right, not a miss.
+  let uiCall = state.toolCalls.find((c) => c.name !== 'note_detected_language');
 
-  const uiCall = state.toolCalls.slice(toolsBefore).find((c) => c.name !== 'note_detected_language');
+  if (!uiCall) {
+    // She did not act on the description alone. A direct instruction must work.
+    ws.send(JSON.stringify({
+      type: 'text',
+      text: 'Please open the evidence board for it. The signboard says the borehole project was completed in 2024.'
+    }));
+    try {
+      await waitFor('an interface tool call', (m) => m.type === 'tool_call', 40000);
+    } catch { /* asserted below */ }
+    uiCall = state.toolCalls.find((c) => c.name !== 'note_detected_language');
+  }
+
   check('voice drives the interface through tool calls', Boolean(uiCall),
     uiCall ? `${uiCall.name}(${JSON.stringify(uiCall.args).slice(0, 120)})` : 'no interface tool call arrived');
 
   check('no errors were reported on the socket', state.errors.length === 0,
     state.errors.map((e) => `${e.code}: ${e.message}`).join('; '));
 
-  ws.close();
+  // ── 8. survive a dropped connection
+  // Terminate without saying goodbye, exactly as a phone losing signal does.
+  ws.terminate();
+  await new Promise((r) => setTimeout(r, 1500));
+
+  const ws2 = new WebSocket(WS_URL);
+  const resumeState = { ready: null };
+  ws2.on('message', (data, isBinary) => {
+    if (isBinary) return;
+    const msg = JSON.parse(data.toString());
+    if (msg.type === 'ready') resumeState.ready = msg;
+    deliver(msg);
+  });
+  await new Promise((res, rej) => {
+    ws2.once('open', res);
+    ws2.once('error', rej);
+  });
+  ws2.send(JSON.stringify({ type: 'start', voice: 'Kore', sessionId: TAB_ID, resumed: true, localHour: 10 }));
+
+  try {
+    await waitFor('ready on the reconnected socket', (m) => m.type === 'ready', 20000);
+  } catch { /* asserted below */ }
+
+  check('a dropped connection resumes the same conversation',
+    Boolean(resumeState.ready?.resumed),
+    resumeState.ready
+      ? (resumeState.ready.resumed
+          ? 'reclaimed the parked Gemini session, context intact'
+          : 'a NEW session was opened — the user would have to start over')
+      : 'no ready frame came back');
+
+  ws2.send(JSON.stringify({ type: 'bye' }));
+  ws2.close();
 
   const failed = results.filter((r) => !r.pass);
   console.log(`\n${results.length - failed.length}/${results.length} checks passed\n`);

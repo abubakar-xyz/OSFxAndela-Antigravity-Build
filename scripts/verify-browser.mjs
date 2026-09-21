@@ -17,8 +17,8 @@
  * is covered by scripts/verify-live.mjs, which streams real 16kHz PCM over the
  * same wire protocol and asserts the transcription that comes back.
  *
- *   npm run build && npm run dev:server   # in one terminal
- *   npm run verify:browser                # in another
+ *   npm run dev              # in one terminal
+ *   npm run verify:browser   # in another
  *
  * Checks:
  *   1. the app loads and the AudioWorklet module registers
@@ -29,13 +29,27 @@
  *   6. what WAZI says reaches the on-screen caption
  */
 
-import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 
 dotenv.config();
+
+// Imported lazily so the failure mode is a sentence rather than a stack trace:
+// Playwright needs a browser download, which not every machine will have.
+let chromium;
+try {
+  ({ chromium } = await import('playwright'));
+} catch {
+  console.error(
+    '\n  This check needs Playwright and a Chromium build:\n' +
+      '    npm install && npx playwright install chromium\n\n' +
+      '  The socket-level check (npm run verify:live) needs neither and covers\n' +
+      '  the voice pipeline end to end.\n'
+  );
+  process.exit(2);
+}
 
 const BASE = process.env.WAZI_VERIFY_URL || 'http://localhost:8080';
 const KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;

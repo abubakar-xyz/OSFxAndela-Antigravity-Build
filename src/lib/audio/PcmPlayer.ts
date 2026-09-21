@@ -2,7 +2,7 @@
  *
  * WHY THIS IS ITS OWN UNIT
  *
- * The previous build measured the RMS of each audio chunk at the moment it
+ * An earlier build measured the RMS of each audio chunk at the moment it
  * *arrived* from the socket and fed that straight to the avatar's mouth. But an
  * arriving chunk is not a playing chunk: it is scheduled behind everything
  * already queued, which at the start of a sentence is most of the sentence. So
@@ -14,15 +14,29 @@
  * AnalyserNode sits on the playback graph and is sampled on animation frames,
  * so the level the avatar sees is, by construction, the level leaving the
  * speakers at that instant.
+ *
+ * HOW THE MOUTH LEVEL IS DERIVED
+ *
+ * Amplitude alone is a crude proxy for an open mouth: a loud fricative like
+ * "sss" has real energy but barely moves a jaw, while a vowel at the same
+ * amplitude opens it wide. So the level combines two measurements of the same
+ * instant — broadband RMS, and the energy specifically in the vocal formant
+ * band (roughly 150 Hz – 3.8 kHz, where vowel articulation lives) — and takes
+ * whichever implies more mouth movement. A noise gate then snaps the mouth
+ * fully shut between syllables instead of leaving it hanging half-open, which
+ * is what actually reads as "alive" rather than "animated".
  */
 
-const MIN_LEAD_SECONDS = 0.08;   // jitter cushion before the first scheduled frame
-const FADE_SECONDS = 0.015;      // de-click ramp when cutting playback off
+const COLD_START_LEAD = 0.035;  // cushion before the first chunk of a turn
+const RESUME_LEAD = 0.005;      // seam between chunks inside a turn
+const FADE_SECONDS = 0.015;     // de-click ramp when cutting playback off
 const ANALYSER_FFT = 512;
 // How long the queue must stay empty before we accept that the turn is over.
 // Chunks arrive in bursts with gaps between them, so the set of live sources
 // empties briefly many times inside a single sentence.
 const DRAIN_GRACE_MS = 220;
+// Below this, the mouth is closed rather than fractionally open.
+const MOUTH_NOISE_GATE = 0.02;
 
 export interface PcmPlayerEvents {
   /** Fires when audio actually starts and stops leaving the speakers. */
@@ -33,7 +47,8 @@ export class PcmPlayer {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private analyser: AnalyserNode | null = null;
-  private scratch = new Float32Array(new ArrayBuffer(ANALYSER_FFT * 4));
+  private timeDomain = new Float32Array(new ArrayBuffer(ANALYSER_FFT * 4));
+  private freqDomain = new Uint8Array(new ArrayBuffer(ANALYSER_FFT / 2));
 
   private sources = new Set<AudioBufferSourceNode>();
   private nextStartTime = 0;
@@ -41,7 +56,7 @@ export class PcmPlayer {
   private rafId: number | null = null;
   private drainTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** Smoothed 0..1 amplitude of what is leaving the speakers right now. */
+  /** Smoothed 0..1 mouth-opening level for what is leaving the speakers now. */
   public level = 0;
 
   private readonly sampleRate: number;
@@ -66,7 +81,8 @@ export class PcmPlayer {
       // Our own envelope below is what the avatar reads, so the analyser itself
       // stays fast and unsmoothed.
       this.analyser.smoothingTimeConstant = 0;
-      this.scratch = new Float32Array(new ArrayBuffer(this.analyser.fftSize * 4));
+      this.timeDomain = new Float32Array(new ArrayBuffer(this.analyser.fftSize * 4));
+      this.freqDomain = new Uint8Array(new ArrayBuffer(this.analyser.frequencyBinCount));
 
       this.master.connect(this.analyser);
       this.analyser.connect(this.ctx.destination);
@@ -102,13 +118,17 @@ export class PcmPlayer {
     source.buffer = buffer;
     source.connect(this.master);
 
-    // If the queue has drained (network hiccup, or this is the first chunk of a
-    // turn) restart the clock with a small cushion instead of scheduling in the
-    // past, which the browser would play all at once as a burst.
-    const earliest = ctx.currentTime + MIN_LEAD_SECONDS;
-    const startAt = Math.max(earliest, this.nextStartTime);
-    source.start(startAt);
-    this.nextStartTime = startAt + buffer.duration;
+    // Only pay for a jitter cushion when starting a turn or recovering from an
+    // underrun. Inside a turn the next chunk joins the previous one almost
+    // seamlessly — a fixed cushion on every chunk is latency the listener feels
+    // as WAZI being slow to answer.
+    const now = ctx.currentTime;
+    if (!this.speaking || this.nextStartTime < now) {
+      this.nextStartTime = Math.max(now, this.nextStartTime) +
+        (this.speaking ? RESUME_LEAD : COLD_START_LEAD);
+    }
+    source.start(this.nextStartTime);
+    this.nextStartTime += buffer.duration;
 
     this.sources.add(source);
     source.onended = () => {
@@ -204,24 +224,47 @@ export class PcmPlayer {
 
   private startMeter(): void {
     if (this.rafId !== null || typeof requestAnimationFrame === 'undefined') return;
+
     const tick = () => {
       this.rafId = requestAnimationFrame(tick);
       const analyser = this.analyser;
       if (!analyser) return;
 
-      analyser.getFloatTimeDomainData(this.scratch);
-      let sum = 0;
-      for (let i = 0; i < this.scratch.length; i++) sum += this.scratch[i] * this.scratch[i];
-      const rms = Math.sqrt(sum / this.scratch.length);
+      analyser.getFloatTimeDomainData(this.timeDomain);
+      analyser.getByteFrequencyData(this.freqDomain);
 
-      // Speech RMS mostly lives in the bottom quarter of the range, so it is
-      // expanded before it drives a mouth. Fast attack, slower release: lips
-      // snap open on a plosive and close smoothly, which is how mouths behave.
-      const target = Math.min(1, rms * 3.2);
-      const coefficient = target > this.level ? 0.55 : 0.18;
-      this.level += (target - this.level) * coefficient;
-      if (this.level < 0.001) this.level = 0;
+      // 1. Broadband amplitude at this instant.
+      let sumSquares = 0;
+      for (let i = 0; i < this.timeDomain.length; i++) {
+        sumSquares += this.timeDomain[i] * this.timeDomain[i];
+      }
+      const rms = Math.sqrt(sumSquares / this.timeDomain.length);
+
+      // 2. Energy in the vocal formant band. `frequencyBinCount` bins span
+      //    0..sampleRate/2, so the bin width is (sampleRate/2)/binCount and the
+      //    150Hz–3.8kHz window is derived rather than hardcoded — the playback
+      //    rate is a constructor argument and could change.
+      const binHz = this.sampleRate / 2 / analyser.frequencyBinCount;
+      const firstBin = Math.max(1, Math.floor(150 / binHz));
+      const lastBin = Math.min(analyser.frequencyBinCount, Math.ceil(3800 / binHz));
+      let formantSum = 0;
+      for (let i = firstBin; i < lastBin; i++) formantSum += this.freqDomain[i];
+      const formant = formantSum / Math.max(1, (lastBin - firstBin) * 255);
+
+      // Whichever implies more jaw movement wins. The multipliers map speech,
+      // which lives in the bottom of each range, onto a usable 0..1 opening.
+      const instant = Math.min(1, Math.max(rms * 3.4, formant * 1.9));
+
+      // Fast attack, slower release: lips snap open on a plosive and close
+      // smoothly, which is how mouths behave.
+      this.level = instant > this.level
+        ? instant
+        : this.level * 0.72 + instant * 0.28;
+
+      // Snap shut between syllables rather than hanging fractionally open.
+      if (this.level < MOUTH_NOISE_GATE) this.level = 0;
     };
+
     this.rafId = requestAnimationFrame(tick);
   }
 

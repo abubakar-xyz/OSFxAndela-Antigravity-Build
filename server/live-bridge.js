@@ -28,9 +28,15 @@
 import { WebSocket } from 'ws';
 import { GoogleGenAI } from '@google/genai';
 
-import { buildSystemInstruction, MOMENT_PROMPTS, resolvePersona } from './wazi-identity.js';
+import {
+  buildSystemInstruction,
+  MOMENT_PROMPTS,
+  resolvePersona,
+  timeOfDayContext
+} from './wazi-identity.js';
 import { buildModelChain, buildLiveConfig, INPUT_MIME, OUTPUT_SAMPLE_RATE } from './live-models.js';
 import { CIVIC_TOOLS } from './civic-tools.js';
+import { park, claim, discard } from './session-vault.js';
 
 const MAX_AUDIO_FRAME_BYTES = 64 * 1024; // a well-behaved client sends ~2KB frames
 const START_TIMEOUT_MS = 15_000;
@@ -71,6 +77,9 @@ export class LiveBridge {
 
     this.ai = new GoogleGenAI({ apiKey });
     this.session = null;
+    this.holder = null;      // { session, sink, backlog } — shared with the vault
+    this.clientId = null;    // the browser's id, for parking across a drop
+    this.saidGoodbye = false;// an intentional end, vs. a connection that dropped
     this.model = null;
     this.starting = null;      // in-flight start promise — serialises concurrent starts
     this.closed = false;
@@ -164,6 +173,12 @@ export class LiveBridge {
         });
         break;
 
+      case 'bye':
+        // The user chose to end this, so nothing is parked.
+        this.saidGoodbye = true;
+        if (this.clientId) discard(this.clientId);
+        break;
+
       case 'mic_end':
         // Tell VAD the stream stopped, rather than leaving it waiting on silence
         // that will never arrive.
@@ -195,6 +210,28 @@ export class LiveBridge {
 
   async _openWithFallback(msg) {
     const persona = resolvePersona(msg.voice);
+    this.clientId = typeof msg.sessionId === 'string' ? msg.sessionId : null;
+
+    // Did this browser drop out a moment ago? If its session is still parked,
+    // pick the conversation back up rather than starting a new one — the user
+    // should not have to re-explain their case because a bus went past a mast.
+    const resumed = claim(this.clientId);
+    if (resumed) {
+      this.log(`resumed parked session on ${resumed.model.id}`);
+      this._adopt(resumed);
+      this._send({
+        type: 'ready',
+        model: resumed.model.id,
+        modelLabel: resumed.model.label,
+        voice: persona.id,
+        personaName: persona.displayName,
+        outputSampleRate: resumed.model.outputSampleRate || OUTPUT_SAMPLE_RATE,
+        capabilities: resumed.model.capabilities,
+        resumed: true
+      });
+      return;
+    }
+
     const { text: systemInstruction } = buildSystemInstruction({
       voiceId: persona.id,
       languageHint: msg.languageHint,
@@ -207,9 +244,8 @@ export class LiveBridge {
     for (const model of chain) {
       if (this.closed) return;
       try {
-        const { session, adopt } = await this._openOne(model, systemInstruction, persona);
-        this.session = session;
-        this.model = model;
+        const holder = await this._openOne(model, systemInstruction, persona);
+        const session = holder.session;
 
         this._send({
           type: 'ready',
@@ -221,13 +257,18 @@ export class LiveBridge {
           capabilities: model.capabilities
         });
         this.log(`live session open on ${model.id} (voice ${persona.id})`);
-        adopt();
+        this._adopt(holder);
 
         // The wake prompt goes out only after the browser knows we are ready,
         // so the very first syllable is never dropped on the floor.
         const moment = msg.resumed ? 'rewake' : 'wake';
         session.sendClientContent({
-          turns: [{ role: 'user', parts: [{ text: MOMENT_PROMPTS[moment] }] }],
+          turns: [
+            {
+              role: 'user',
+              parts: [{ text: MOMENT_PROMPTS[moment] + timeOfDayContext(msg.localHour) }]
+            }
+          ],
           turnComplete: true
         });
         return;
@@ -263,9 +304,14 @@ export class LiveBridge {
     let setupSeen = false;
     let failure = null;
     let session = null;
-    let live = false;          // has the caller adopted this session yet
-    const backlog = [];        // frames that land between setup and adoption
     let notify = () => {};
+
+    // The holder is what actually survives a dropped connection: it owns the
+    // Gemini session and points at whichever bridge is currently listening.
+    // While `sink` is null — between setup and adoption, or while the session
+    // is parked waiting for a browser to come back — frames are held here
+    // rather than thrown away.
+    const holder = { session: null, sink: null, backlog: [], model };
     const settledOrChanged = () => new Promise((r) => { notify = r; });
 
     const mark = (err) => {
@@ -286,18 +332,18 @@ export class LiveBridge {
           // be before the caller has adopted this session. Those frames are
           // real audio, so they are held and replayed rather than dropped.
           if (!setupSeen || m.setupComplete) return;
-          if (live) this._onGeminiMessage(m);
-          else backlog.push(m);
+          if (holder.sink) holder.sink._onGeminiMessage(m);
+          else if (holder.backlog.length < 400) holder.backlog.push(m);
         },
         onerror: (e) => {
           const err = new Error(e?.message || 'live socket error');
           if (!setupSeen) return mark(err);
-          this._onGeminiDown(err.message);
+          holder.sink?._onGeminiDown(err.message);
         },
         onclose: (e) => {
           const reason = e?.reason || '';
           if (!setupSeen) return mark(new Error(reason || 'closed before setup'));
-          this._onGeminiDown(reason);
+          holder.sink?._onGeminiDown(reason);
         }
       }
     });
@@ -317,14 +363,17 @@ export class LiveBridge {
       throw failure || new Error('setup never completed');
     }
 
-    return {
-      session,
-      /** Called once the bridge has adopted this session; replays held frames. */
-      adopt: () => {
-        live = true;
-        while (backlog.length) this._onGeminiMessage(backlog.shift());
-      }
-    };
+    holder.session = session;
+    return holder;
+  }
+
+  /** Points a holder at this bridge and replays anything it held. */
+  _adopt(holder) {
+    this.holder = holder;
+    this.session = holder.session;
+    this.model = holder.model;
+    holder.sink = this;
+    while (holder.backlog.length) this._onGeminiMessage(holder.backlog.shift());
   }
 
   // ────────────────────────────────────────────────────── gemini inbound
@@ -395,10 +444,19 @@ export class LiveBridge {
     this.log(
       `bridge closed (${why}) — ${this.framesIn} mic frames in, ${this.framesOut} audio frames out`
     );
-    if (this.session) {
-      try { this.session.close(); } catch { /* already gone */ }
-      this.session = null;
+
+    if (this.holder) {
+      if (!this.saidGoodbye && this.clientId) {
+        // The connection dropped rather than ended. Hold the conversation open
+        // briefly in case the browser comes straight back.
+        park(this.clientId, this.holder, this.log);
+      } else {
+        if (this.holder.sink === this) this.holder.sink = null;
+        try { this.holder.session.close(); } catch { /* already gone */ }
+      }
+      this.holder = null;
     }
+    this.session = null;
     if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
       try { this.ws.close(); } catch { /* already gone */ }
     }

@@ -22,6 +22,10 @@ import type { WaziState } from '../lib/types';
 
 const MAX_RECONNECT_ATTEMPTS = 4;
 const IDLE_FAREWELL_MS = 60_000;
+// If no greeting audio arrives this soon after connecting, stop showing
+// "connecting" and let the user talk. A UI stuck mid-handshake is worse than
+// one that quietly moves on.
+const WAKE_FALLBACK_MS = 5_000;
 
 /** Language WAZI has decided the user is speaking, reported by the model itself. */
 export interface DetectedLanguage {
@@ -51,6 +55,26 @@ export interface UseLiveAudioOptions {
   onLanguageDetected?: (lang: DetectedLanguage) => void;
 }
 
+/**
+ * A stable id for this tab, so a session that survives a dropped connection can
+ * be reclaimed. Kept in sessionStorage rather than localStorage: it should die
+ * with the tab, and two tabs are two conversations.
+ */
+function tabSessionId(): string {
+  const KEY = 'wazi_live_session_id';
+  try {
+    const existing = sessionStorage.getItem(KEY);
+    if (existing) return existing;
+    const fresh = `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    sessionStorage.setItem(KEY, fresh);
+    return fresh;
+  } catch {
+    // Private mode, or storage blocked. A per-load id still works for the
+    // common case of a drop-and-retry inside one page view.
+    return `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  }
+}
+
 function resolveSocketUrl(): string {
   const configured = import.meta.env.VITE_WS_PROXY_URL;
   if (configured) return configured;
@@ -69,6 +93,7 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
   const [speakerLevel, setSpeakerLevel] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [micAvailable, setMicAvailable] = useState(true);
   const [modelLabel, setModelLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,7 +118,9 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intentionalCloseRef = useRef(false);
   const hasConnectedRef = useRef(false);
+  const tabIdRef = useRef<string>('');
   const levelRafRef = useRef<number | null>(null);
+  const wakeFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Reconnection re-enters connect(), so it goes through a ref rather than the
   // callback capturing itself while it is still being initialised.
   const connectRef = useRef<() => Promise<void>>(async () => {});
@@ -136,6 +163,7 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
       switch (msg.type) {
         case 'ready':
           setModelLabel(msg.modelLabel);
+          if (msg.resumed) setError(null);
           setError(null);
           reconnectsRef.current = 0;
           setWaziState('listening');
@@ -220,7 +248,15 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
 
     const player = new PcmPlayer(OUTPUT_SAMPLE_RATE, {
       onSpeakingChange: (speaking) => {
+        // The microphone needs to know, so it can hold back speaker bleed
+        // without blocking a real interruption. See MicCapture.
+        micRef.current?.setWaziSpeaking(speaking);
+
         if (speaking) {
+          if (wakeFallbackRef.current) {
+            clearTimeout(wakeFallbackRef.current);
+            wakeFallbackRef.current = null;
+          }
           setWaziState('speaking');
           startLevelPump();
         } else {
@@ -232,11 +268,25 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
     });
     playerRef.current = player;
 
+    // The playback context must be created inside the user gesture that called
+    // connect(). An AudioContext created later starts suspended and WAZI is
+    // silently mute.
     try {
-      // Both of these must happen inside the user gesture that called connect().
-      // An AudioContext created later starts suspended and WAZI is silently mute.
       await player.resume();
+    } catch (err) {
+      console.error('[wazi] could not open the audio output:', err);
+      setError('This browser would not let WAZI play audio. Try tapping Talk again.');
+      setWaziState('error');
+      await playerRef.current?.close();
+      playerRef.current = null;
+      return;
+    }
 
+    // A refused or missing microphone is a degraded session, not a failed one.
+    // The user can still hear WAZI and type to her — which matters on shared
+    // devices, on hardware without a working mic, and for anyone who simply is
+    // not ready to be recorded yet.
+    try {
       const mic = new MicCapture({
         onFrame: (pcm) => {
           const ws = wsRef.current;
@@ -248,15 +298,14 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
       });
       micRef.current = mic;
       await mic.start();
+      setMicAvailable(true);
     } catch (err) {
-      console.error('[wazi] could not open the microphone:', err);
-      setError('WAZI needs microphone access to talk with you. Check your browser permissions.');
-      setWaziState('error');
+      console.warn('[wazi] continuing without a microphone:', err);
       await micRef.current?.stop();
-      await playerRef.current?.close();
       micRef.current = null;
-      playerRef.current = null;
-      return;
+      setMicAvailable(false);
+      setMicLevel(0);
+      setError('No microphone, so WAZI cannot hear you — but she can still talk, and you can type.');
     }
 
     const ws = new WebSocket(resolveSocketUrl());
@@ -270,10 +319,21 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
         type: 'start',
         voice: sessionConfig.current.voice,
         languageHint: sessionConfig.current.languageHint,
-        resumed: hasConnectedRef.current
+        resumed: hasConnectedRef.current,
+        sessionId: (tabIdRef.current ||= tabSessionId()),
+        // So WAZI can greet someone at 6am differently from someone at 11pm.
+        // The server holds no clock that is meaningful to the user.
+        localHour: new Date().getHours()
       });
       hasConnectedRef.current = true;
       resetIdleTimer();
+
+      // Don't leave the UI mid-handshake if the greeting never arrives.
+      if (wakeFallbackRef.current) clearTimeout(wakeFallbackRef.current);
+      wakeFallbackRef.current = setTimeout(() => {
+        wakeFallbackRef.current = null;
+        setWaziState((current) => (current === 'waiting_permission' ? 'listening' : current));
+      }, WAKE_FALLBACK_MS);
     };
 
     ws.onmessage = (event) => {
@@ -307,6 +367,10 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
       if (idleTimerRef.current) {
         clearTimeout(idleTimerRef.current);
         idleTimerRef.current = null;
+      }
+      if (wakeFallbackRef.current) {
+        clearTimeout(wakeFallbackRef.current);
+        wakeFallbackRef.current = null;
       }
 
       if (intentionalCloseRef.current) {
@@ -345,8 +409,14 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
       clearTimeout(idleTimerRef.current);
       idleTimerRef.current = null;
     }
+    if (wakeFallbackRef.current) {
+      clearTimeout(wakeFallbackRef.current);
+      wakeFallbackRef.current = null;
+    }
 
-    send({ type: 'mic_end' });
+    // `bye` tells the server this was deliberate, so it does not hold the
+    // Gemini session open waiting for a reconnection that is not coming.
+    send({ type: 'bye' });
     wsRef.current?.close();
     wsRef.current = null;
 
@@ -401,6 +471,7 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
       intentionalCloseRef.current = true;
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      if (wakeFallbackRef.current) clearTimeout(wakeFallbackRef.current);
       if (levelRafRef.current !== null) cancelAnimationFrame(levelRafRef.current);
       wsRef.current?.close();
       void micRef.current?.stop();
@@ -414,6 +485,7 @@ export function useLiveAudio(options: UseLiveAudioOptions = {}) {
     speakerLevel,
     isConnected,
     isMuted,
+    micAvailable,
     modelLabel,
     error,
     connect,

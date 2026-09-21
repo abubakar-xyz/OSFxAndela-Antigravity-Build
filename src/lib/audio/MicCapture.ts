@@ -32,6 +32,30 @@ export interface MicCaptureEvents {
   onLevel?: (level: number) => void;
 }
 
+// ─── Speaker-bleed suppression ───────────────────────────────────────────────
+//
+// On a laptop or a good phone, the browser's own echo canceller handles WAZI's
+// voice leaking back into the microphone. On the cheap Android hardware this
+// app is actually for, it often does not: a few hundred milliseconds of WAZI's
+// own speech comes back through the mic, Gemini's voice-activity detector hears
+// "the user is talking", and WAZI interrupts herself mid-sentence. It reads as
+// the assistant being unable to finish a thought.
+//
+// So while WAZI is speaking, frames in the quiet "bleed" band are held back —
+// but a genuine interruption is never blocked. Someone actually talking over
+// her is loud (well above bleed), and two consecutive loud frames open the gate
+// immediately. The gate fails OPEN: any doubt, and the audio goes through.
+//
+// This is a revision of an earlier decision to remove echo gating entirely. The
+// gate that was removed hard-muted the microphone for the whole time WAZI spoke,
+// which made interruption impossible. Suppressing a narrow band while leaving
+// barge-in intact is a different trade, and the right one for the hardware.
+
+/** Above this RMS, the user is talking, not the speaker bleeding. */
+const BARGE_IN_RMS = 0.08;
+/** Consecutive loud frames required before the gate opens. ~40ms. */
+const BARGE_IN_FRAMES = 2;
+
 export class MicCapture {
   private ctx: AudioContext | null = null;
   private stream: MediaStream | null = null;
@@ -44,6 +68,8 @@ export class MicCapture {
   private startedAt = 0;
   private sentSeconds = 0;
   private warnedAboutRate = false;
+  private waziSpeaking = false;
+  private loudFrames = 0;
 
   private readonly events: MicCaptureEvents;
 
@@ -104,6 +130,15 @@ export class MicCapture {
     this.sink.connect(ctx.destination);
   }
 
+  /**
+   * Told by the session whether WAZI is currently speaking, so speaker bleed
+   * can be held back without blocking a real interruption. See the note above.
+   */
+  setWaziSpeaking(speaking: boolean): void {
+    this.waziSpeaking = speaking;
+    if (!speaking) this.loudFrames = 0;
+  }
+
   /** Stops sending audio without tearing the graph down. */
   setMuted(muted: boolean): void {
     this.node?.port.postMessage({ type: 'mute', muted });
@@ -128,6 +163,18 @@ export class MicCapture {
     this.sink = null;
     this.level = 0;
     if (ctx) await ctx.close().catch(() => {});
+  }
+
+  /** False only for quiet frames while WAZI is mid-sentence. Fails open. */
+  private shouldForward(rms: number): boolean {
+    if (!this.waziSpeaking) return true;
+
+    if (rms >= BARGE_IN_RMS) {
+      this.loudFrames++;
+      return this.loudFrames >= BARGE_IN_FRAMES;
+    }
+    this.loudFrames = Math.max(0, this.loudFrames - 1);
+    return false;
   }
 
   private handleWorkletMessage(data: { type: string; sampleRate?: number; pcm?: ArrayBuffer }): void {
@@ -172,6 +219,7 @@ export class MicCapture {
     this.level += (target - this.level) * (target > this.level ? 0.5 : 0.12);
     this.events.onLevel?.(this.level);
 
+    if (!this.shouldForward(rms)) return;
     this.events.onFrame(pcm);
   }
 }

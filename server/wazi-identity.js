@@ -120,6 +120,28 @@ export const MOMENT_PROMPTS = {
 // ═══════════════════════════════════════════════════════════════
 
 /**
+ * A greeting that fits the time of day where the *user* is. The server's own
+ * clock is meaningless here — a proxy in one region serving someone in another
+ * would wish them good morning at bedtime — so the browser sends its local hour
+ * and this turns it into context for the wake prompt.
+ *
+ * @param {number} [localHour] 0-23 in the user's timezone.
+ */
+export function timeOfDayContext(localHour) {
+  if (typeof localHour !== 'number' || Number.isNaN(localHour)) return '';
+  if (localHour >= 5 && localHour < 12) {
+    return ' It is morning where they are, so let the greeting carry that.';
+  }
+  if (localHour >= 12 && localHour < 17) {
+    return ' It is the afternoon where they are, so let the greeting carry that.';
+  }
+  if (localHour >= 17 && localHour < 22) {
+    return ' It is evening where they are, so let the greeting carry that.';
+  }
+  return ' It is late at night where they are. Keep the greeting quiet and unhurried to match.';
+}
+
+/**
  * Builds the full system instruction injected into the Live API setup frame.
  *
  * @param {object}  opts
@@ -161,12 +183,13 @@ export function buildSystemInstruction({ voiceId, languageHint, jurisdiction } =
     [
       'TOOLS — YOU DRIVE THE SCREEN:',
       '- You are not describing an interface to the user; you are operating it. When something should appear on their screen, call the tool. Never say "let me open that for you" without calling it, and never narrate the call itself.',
-      '- open_evidence_board: call it as soon as you have a claim and a place — a named facility, street, project or service, plus what the user says is wrong. That is ENOUGH. Do not interrogate first. The board opens while you keep talking, and details the user gives afterwards refine it. Waiting for a complete picture before opening it is the single worst thing you can do here.',
-      '- If the user asks you to open, check, look into or show them something, that is an instruction, not conversation. Call the tool on that turn, even if you would rather ask another question first.',
+      '- open_evidence_board: call it as soon as you have a claim and a place — plus what the user says is wrong. That is ENOUGH. Do not interrogate first. The board opens while you keep talking, and details the user gives afterwards refine it.',
+      '- A vaguely named place IS a place. "my street", "our clinic", "the road near the market", "this school" all qualify. You do not need an exact address, a ward, an LGA or a reference number before opening the board — asking for one before you open it is the single worst thing you can do here. Open it, THEN ask which street.',
+      '- If the user asks you to open, check, look into, show, or investigate anything, that is an instruction, not conversation. Call the tool on that same turn. Never answer such a request with a question instead of a call.',
       '- open_draft_studio: call it the moment the user agrees they want something written, sent or filed.',
       '- request_photo_evidence: call it when actually seeing the place, signboard or document would settle the question.',
       '- raise_safety_alert: on any mention of physical danger, violence, intimidation or a medical emergency, call this FIRST, before you say anything else, then keep speaking calmly.',
-      '- Your one-follow-up-question rule still holds, but a question NEVER replaces a tool call. Call the tool, then ask your question in the same breath.'
+      '- ORDER OF OPERATIONS, every single turn: (1) call any tool the turn warrants, (2) then speak. Your one-follow-up-question rule applies to what you SAY. It never delays or replaces a call. If you find yourself about to ask a question in order to decide whether to call a tool, call the tool first and ask the question anyway.'
     ].join('\n')
   );
 

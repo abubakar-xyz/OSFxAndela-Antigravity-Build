@@ -1,12 +1,21 @@
-/* WAZI Civic — voice proxy & Gemini key custodian.
+/* WAZI Civic — the whole app, in one process on one port.
  *
- * Two jobs, and only two:
+ *   npm run dev     Vite in middleware mode + the voice socket
+ *   npm start       the built UI + the voice socket
+ *
+ * One command and one origin is a deliberate choice, not a convenience. A
+ * separate dev server and proxy means two terminals, a CORS story, a second
+ * port to forward, and a demo that dies if one of them is not running. It also
+ * means the browser derives the WebSocket URL from the page it was served from,
+ * so opening the app on a phone on the same network just works.
+ *
+ * Three jobs:
  *   1. /live  — one WebSocket per browser, bridged to one Gemini Live session.
- *   2. /api/* — the handful of non-realtime Gemini calls the UI needs, so that
- *               the API key never reaches a browser bundle.
+ *   2. /api/* — the non-realtime Gemini calls, so the key never reaches a bundle.
+ *   3. everything else — the UI itself.
  *
- * Everything about WAZI's character lives in server/wazi-identity.js; everything
- * about which model can do what lives in server/live-models.js.
+ * WAZI's character lives in server/wazi-identity.js; model capabilities live in
+ * server/live-models.js.
  */
 
 import http from 'http';
@@ -19,6 +28,7 @@ import { GoogleGenAI } from '@google/genai';
 
 import { LiveBridge } from './server/live-bridge.js';
 import { LIVE_MODELS, INPUT_SAMPLE_RATE, OUTPUT_SAMPLE_RATE } from './server/live-models.js';
+import { GRACE_PERIOD_MS, drain as drainVault } from './server/session-vault.js';
 import { PERSONAS } from './server/wazi-identity.js';
 
 dotenv.config();
@@ -41,6 +51,8 @@ if (!API_KEY) {
   );
 }
 
+const DEV = process.env.NODE_ENV !== 'production';
+
 const app = express();
 app.use(express.json({ limit: '12mb' })); // photo evidence arrives as base64
 
@@ -59,6 +71,7 @@ app.get('/api/health', (_req, res) => {
     models: LIVE_MODELS.map((m) => ({ id: m.id, label: m.label, capabilities: m.capabilities })),
     personas: Object.values(PERSONAS).map((p) => ({ id: p.id, name: p.displayName, role: p.role })),
     audio: { inputSampleRate: INPUT_SAMPLE_RATE, outputSampleRate: OUTPUT_SAMPLE_RATE },
+    reconnectGraceMs: GRACE_PERIOD_MS,
     jurisdiction: JURISDICTION
   });
 });
@@ -103,17 +116,6 @@ app.post('/api/vision/clues', async (req, res) => {
     return res.status(502).json({ error: 'extraction_failed', message: err?.message });
   }
 });
-
-// In production the built UI is served from this same origin, so the browser
-// reaches the voice socket at its own host. Anything that works on a laptop
-// then works from a phone on the same network — the reason the client no
-// longer hardcodes ws://localhost:8080.
-const DIST = path.resolve('dist');
-if (fs.existsSync(DIST)) {
-  app.use(express.static(DIST));
-  app.get(/^\/(?!api\/|live$).*/, (_req, res) => res.sendFile(path.join(DIST, 'index.html')));
-  console.log('Serving the built UI from ./dist');
-}
 
 // ═══════════════════════════════════════════════════════════════
 // WEBSOCKET
@@ -167,16 +169,46 @@ const heartbeat = setInterval(() => {
 }, HEARTBEAT_MS);
 wss.on('close', () => clearInterval(heartbeat));
 
-server.listen(PORT, () => {
-  console.log(`WAZI voice proxy listening on http://localhost:${PORT}`);
-  console.log(`  live socket   ws://localhost:${PORT}/live`);
+// ═══════════════════════════════════════════════════════════════
+// THE UI
+// ═══════════════════════════════════════════════════════════════
+// Mounted last so /api and the /live upgrade are matched first.
+
+async function mountUi() {
+  if (DEV) {
+    // Vite as middleware rather than as a second server: same port, same
+    // origin, full HMR, one process to start and one to stop.
+    const { createServer: createViteServer } = await import('vite');
+    const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
+    app.use(vite.middlewares);
+    console.log('Vite dev middleware mounted (HMR active)');
+    return;
+  }
+
+  const DIST = path.resolve('dist');
+  if (!fs.existsSync(DIST)) {
+    console.warn('⚠️  No ./dist found. Run `npm run build` first, or use `npm run dev`.');
+    return;
+  }
+  app.use(express.static(DIST));
+  app.get(/^\/(?!api\/|live$).*/, (_req, res) => res.sendFile(path.join(DIST, 'index.html')));
+  console.log('Serving the built UI from ./dist');
+}
+
+await mountUi();
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n  WAZI is live on http://localhost:${PORT}`);
+  console.log(`  voice         ws://localhost:${PORT}/live`);
   console.log(`  model chain   ${(PREFERRED_MODEL ? [PREFERRED_MODEL] : []).concat(LIVE_MODELS.map((m) => m.id)).join(' → ')}`);
   console.log(`  audio         ${INPUT_SAMPLE_RATE}Hz PCM in / ${OUTPUT_SAMPLE_RATE}Hz PCM out`);
+  console.log(`  jurisdiction  ${JURISDICTION}\n`);
 });
 
 function shutdown(signal) {
   console.log(`\n${signal} — closing live sessions.`);
   clearInterval(heartbeat);
+  drainVault();
   for (const ws of wss.clients) { try { ws.close(); } catch { /* already gone */ } }
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 3000).unref();

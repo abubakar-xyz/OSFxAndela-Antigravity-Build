@@ -17,7 +17,20 @@ export const OUTPUT_SAMPLE_RATE = 24000;
 
 export type ClientMessage =
   /** Opens the Gemini session. `languageHint` is a hint, never a constraint. */
-  | { type: 'start'; voice: string; languageHint?: string; resumed?: boolean }
+  | {
+      type: 'start';
+      voice: string;
+      languageHint?: string;
+      resumed?: boolean;
+      /** The user's local hour (0-23), so the greeting can fit the time of day. */
+      localHour?: number;
+      /**
+       * Stable per-tab id. If the connection drops, the server parks the Gemini
+       * session under this id for a short grace period so a reconnecting browser
+       * resumes the same conversation instead of starting over.
+       */
+      sessionId?: string;
+    }
   /** A typed turn, for when someone cannot or does not want to speak. */
   | { type: 'text'; text: string }
   /** A UX moment prompt, resolved to a full prompt server-side. */
@@ -25,7 +38,9 @@ export type ClientMessage =
   /** The browser's answer to a tool call. */
   | { type: 'tool_result'; id: string; name: string; response: unknown }
   /** Microphone closed — flush voice activity detection. */
-  | { type: 'mic_end' };
+  | { type: 'mic_end' }
+  /** The user ended the session deliberately; do not park it for resumption. */
+  | { type: 'bye' };
 
 export type MomentName = 'wake' | 'rewake' | 'idle_farewell' | 'evidence_ready';
 
@@ -61,6 +76,8 @@ export type ServerMessage =
       personaName: string;
       outputSampleRate: number;
       capabilities: ModelCapabilities;
+      /** True when this picked up a conversation that survived a dropped connection. */
+      resumed?: boolean;
     }
   /** WAZI has started speaking. */
   | { type: 'turn_start' }

@@ -116,8 +116,7 @@ npm run verify:browser    # the audio stack inside the browser
 | **`verify:journey`** | Drives a 360 px phone screen through signboard → clues → evidence board → re-check → FOI draft → dispatch, asserting the statutory citation, the named authority, the escalation route, and that no view scrolls sideways. Needs **no API key**. |
 | **`verify:browser`** | Asserts the 16 kHz capture context, the 24 kHz playback context, that audio is actually scheduled, and that the avatar's mouth is driven by an analyser on the live playback graph. |
 
-Every one of these found real defects rather than confirming a happy path — see
-[`AI_CODING_LOG.md`](AI_CODING_LOG.md).
+Every one of these found real defects rather than confirming a happy path during development.
 
 ---
 
@@ -282,18 +281,6 @@ scripts/
   verify-journey.mjs         the whole journey, in a real browser
   verify-browser.mjs         the browser audio stack
 ```
-
----
-
-## Documentation
-
-| | |
-|---|---|
-| [`SUBMISSION.md`](SUBMISSION.md) | The written summary: track, sources, trust, and how AI tools were used |
-| [`DECISIONS.md`](DECISIONS.md) | Every architectural decision and why, including the ones reversed |
-| [`AI_CODING_LOG.md`](AI_CODING_LOG.md) | How this was built with AI tooling, and what the harnesses caught |
-| [`THREAT_MODEL.md`](THREAT_MODEL.md) | Threats, mitigations, and the human approval gate |
-| [`ACCESSIBILITY.md`](ACCESSIBILITY.md) | WCAG posture, multimodal parity, language access |
 
 ---
 

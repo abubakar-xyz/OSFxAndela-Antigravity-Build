@@ -51,7 +51,7 @@ try {
   process.exit(2);
 }
 
-const BASE = process.env.WAZI_VERIFY_URL || 'http://localhost:8080';
+const BASE = process.env.WAZI_VERIFY_URL || 'http://localhost:3000';
 const KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
 const CACHE = path.resolve('.cache');
 const WAV = path.join(CACHE, 'verify-utterance-16k.wav');

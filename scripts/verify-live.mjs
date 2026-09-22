@@ -29,7 +29,7 @@ import { GoogleGenAI } from '@google/genai';
 
 dotenv.config();
 
-const BASE = process.env.WAZI_VERIFY_URL || 'http://localhost:8080';
+const BASE = process.env.WAZI_VERIFY_URL || 'http://localhost:3000';
 const WS_URL = BASE.replace(/^http/, 'ws') + '/live';
 const KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
 const CACHE = path.resolve('.cache');

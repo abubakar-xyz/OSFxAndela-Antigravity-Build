@@ -39,7 +39,7 @@ dotenv.config();
 const API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
 const PREFERRED_MODEL = process.env.GEMINI_LIVE_MODEL || process.env.VITE_GEMINI_LIVE_MODEL || '';
 const JURISDICTION = process.env.WAZI_JURISDICTION || 'Nigeria';
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const VERBOSE = process.env.WAZI_LOG !== 'quiet';
 
 if (!API_KEY) {

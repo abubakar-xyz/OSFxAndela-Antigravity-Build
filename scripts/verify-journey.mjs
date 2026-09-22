@@ -24,7 +24,7 @@ try {
   process.exit(2);
 }
 
-const BASE = process.env.WAZI_VERIFY_URL || 'http://localhost:8080';
+const BASE = process.env.WAZI_VERIFY_URL || 'http://localhost:3000';
 const SHOTS = process.env.WAZI_SHOTS || '.cache/journey';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -81,7 +81,7 @@ async function main() {
   await shot('02-intake');
 
   // ── 2. Clue extraction from the flagship signboard
-  const loadSignboard = page.locator('text=/Load Signboard/i').first();
+  const loadSignboard = page.locator('button').filter({ hasText: /load sample|load signboard/i }).first();
   const hasDemo = (await loadSignboard.count()) > 0;
   if (hasDemo) {
     await loadSignboard.click();
@@ -93,7 +93,7 @@ async function main() {
   await shot('03-clues');
 
   // ── 3. Record vs reality
-  const confirm = page.locator('button').filter({ hasText: /confirm|verify|continue|check these/i }).first();
+  const confirm = page.locator('button').filter({ hasText: /verify against official records|confirm|continue/i }).first();
   if (await confirm.count()) await confirm.click();
   await sleep(10000);
 
@@ -122,8 +122,8 @@ async function main() {
 
   // ── 5. Draft
   const toDraft = page.locator('button').filter({ hasText: /^Draft Studio$/i }).first();
-  if (await toDraft.count()) await toDraft.click();
-  else await page.locator('button').filter({ hasText: /take action|draft/i }).first().click();
+  if (await toDraft.count()) await toDraft.click({ timeout: 10000 }).catch(() => {});
+  else await page.locator('button').filter({ hasText: /take action|draft/i }).first().click().catch(() => {});
   await sleep(3500);
   const draftShell = (await page.locator('.mobile-shell').getAttribute('class')) || '';
   const statute = await page.locator('text=/Freedom of Information Act/i').count();

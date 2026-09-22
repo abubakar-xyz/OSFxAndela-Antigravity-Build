@@ -9,6 +9,7 @@
 *Wazi* — Swahili: open, clear, out in the daylight.
 
 Built for the **OSF × Andela 2026 hackathon**, *Information you can trust*.
+
 Cross-track: **Transparency & Accountability** · **Safety, Reporting & Protection**
 
 </div>
